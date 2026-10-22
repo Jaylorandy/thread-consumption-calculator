@@ -1,0 +1,1972 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>智能线耗计算器 · 工序匹配版</title>
+<style>
+:root{
+  --bg:#f4f5f7; --card:#ffffff; --line:#e4e6eb; --text:#1c1e21; --muted:#6b7280;
+  --brand:#0f9d58; --brand-dark:#0b7a45; --brand-soft:#e6f6ee; --danger:#d93025;
+  --radius:12px;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:14px/1.6 "PingFang SC","Microsoft YaHei",system-ui,sans-serif}
+header{max-width:1400px;margin:0 auto;padding:28px 20px 4px;position:relative}
+header h1{font-size:22px;margin:0 0 4px}
+header p{margin:0;color:var(--muted)}
+main{max-width:1400px;margin:0 auto;padding:16px 20px 48px;display:grid;gap:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:18px 20px}
+.card h2{font-size:15px;margin:0 0 14px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.field label{display:block;color:var(--muted);font-size:12px;margin-bottom:4px}
+input,select{width:100%;padding:7px 9px;border:1px solid var(--line);border-radius:8px;font:inherit;color:var(--text);background:#fff}
+input[type=checkbox]{width:16px;height:16px;padding:0;margin:0;flex-shrink:0;accent-color:var(--brand);cursor:pointer}
+input:focus,select:focus{outline:2px solid var(--brand-soft);border-color:var(--brand)}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border:none;border-radius:8px;background:var(--brand);color:#fff;font:inherit;cursor:pointer}
+.btn:hover{background:var(--brand-dark)}
+.btn-ghost{background:#fff;color:var(--text);border:1px solid var(--line)}
+.btn-ghost:hover{background:#f3f4f6}
+.btn-danger{color:var(--danger)}
+table{width:100%;border-collapse:collapse}
+th,td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:middle}
+th{font-size:12px;color:var(--muted);font-weight:500;white-space:nowrap}
+td input,td select{padding:5px 8px}
+.rowparams{display:flex;gap:10px;flex-wrap:wrap;align-items:end}
+.rowparams .mini{display:grid;gap:2px}
+.rowparams .mini span{font-size:11px;color:var(--muted);white-space:nowrap}
+.rowparams .mini input{width:84px}
+td.subtotal{font-variant-numeric:tabular-nums;font-weight:600;white-space:nowrap}
+.row-del,.row-add,.row-up,.row-down,.row-dup{background:none;border:none;cursor:pointer;font-size:14px;padding:4px 5px}
+.row-del{color:var(--danger)}
+.row-add{color:var(--brand)}
+.row-up,.row-down,.row-dup{color:var(--muted)}
+.row-up:hover,.row-down:hover,.row-dup:hover{color:var(--brand-dark)}
+.result-wrap{display:grid;grid-template-columns:220px 1fr;gap:20px;align-items:start}
+@media(max-width:760px){.result-wrap{grid-template-columns:1fr}}
+.big-num{font-size:34px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--brand-dark);line-height:1.2}
+.big-num small{font-size:15px;font-weight:400;color:var(--muted)}
+.kv{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px dashed var(--line);font-variant-numeric:tabular-nums}
+.kv span:last-child{font-weight:600}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.chip{background:var(--brand-soft);color:var(--brand-dark);border-radius:999px;padding:3px 12px;font-size:12px;font-variant-numeric:tabular-nums}
+.note{color:var(--muted);font-size:12px;margin-top:12px}
+.ref-table td,.ref-table th{text-align:center}
+.ref-table td:first-child,.ref-table th:first-child{text-align:left}
+.coats-col{color:var(--muted);background:rgba(0,0,0,.025);font-style:italic}
+footer{max-width:1400px;margin:0 auto;padding:0 20px 32px;color:var(--muted);font-size:12px}
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+
+/* 左右对比布局 */
+.compare-view{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px;height:800px}
+@media(max-width:1200px){.compare-view{grid-template-columns:1fr;height:auto}}
+.compare-panel{border:1px solid var(--line);border-radius:8px;padding:16px;background:#fff;display:flex;flex-direction:column;height:100%;overflow:hidden}
+.compare-panel h3{margin:0 0 12px;font-size:14px;color:var(--brand-dark);flex-shrink:0}
+.compare-panel .table-container{flex:1;overflow-y:auto;overflow-x:hidden}
+.compare-panel table{font-size:12px}
+.compare-panel th{font-size:11px;padding:6px 8px;position:sticky;top:0;background:#fff;z-index:1}
+.compare-panel td{padding:6px 8px}
+.compare-panel input,.compare-panel select{padding:4px 6px;font-size:12px}
+
+/* 智能匹配标记 */
+.match-badge{display:inline-block;padding:2px 6px;border-radius:4px;font-size:11px;margin-left:4px}
+.match-exact{background:#d1fae5;color:#065f46}
+.match-partial{background:#fef3c7;color:#92400e}
+.match-new{background:#fee2e2;color:#991b1b}
+.match-missing{background:#e0e7ff;color:#3730a3}
+
+/* 历史款式工序 */
+.style-op-item{padding:8px;border-bottom:1px solid var(--line);cursor:pointer;transition:background .2s}
+.style-op-item:hover{background:#f3f4f6}
+.style-op-item.selected{background:#dbeafe}
+.style-op-item .op-name{font-weight:500}
+.style-op-item .op-detail{font-size:11px;color:var(--muted);margin-top:2px}
+.style-op-item .op-actions{margin-top:4px;display:flex;gap:4px}
+.style-op-item .op-actions button{padding:2px 8px;font-size:11px;border:1px solid var(--line);background:#fff;border-radius:4px;cursor:pointer}
+.style-op-item .op-actions button:hover{background:#f3f4f6}
+/* 已添加工序标识 */
+.style-op-item.added{background:#d1fae5;border-left:3px solid #10b981}
+.style-op-item.added .op-name{color:#065f46}
+.added-badge{display:inline-block;padding:2px 8px;font-size:11px;background:#10b981;color:#fff;border-radius:4px;font-weight:500}
+
+/* 智能推荐面板 */
+.smart-panel{background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:12px;margin-top:16px}
+.smart-panel h4{margin:0 0 8px;font-size:13px;color:#0369a1}
+.smart-panel .recommendation{padding:8px;border-bottom:1px solid #bae6fd}
+.smart-panel .recommendation:last-child{border-bottom:none}
+.smart-panel .recommendation-name{font-weight:500;color:#0369a1}
+.smart-panel .recommendation-reason{font-size:11px;color:#64748b;margin-top:2px}
+.smart-panel .recommendation-actions{margin-top:4px;display:flex;gap:4px}
+.smart-panel .recommendation-actions button{padding:2px 8px;font-size:11px;border:1px solid #bae6fd;background:#fff;border-radius:4px;cursor:pointer}
+.smart-panel .recommendation-actions button:hover{background:#f0f9ff}
+</style>
+</head>
+<body>
+<header>
+  <h1>智能线耗计算器</h1>
+  <p>导入 DXF 纸样 → 智能匹配历史工序 → 左右对比编辑 → 生成精准线耗 <span id="appVer" style="font-size:12px;opacity:.75;margin-left:8px"></span></p>
+  <button class="btn btn-ghost" id="btnCheckUpdate" style="position:absolute;top:22px;right:20px">检查更新</button>
+</header>
+<main>
+  <section class="card">
+    <h2>款式与全局参数</h2>
+    <div class="grid">
+      <div class="field"><label>款号 / 款名</label><input id="styleNo" placeholder="如 T-2026-001"></div>
+      <div class="field"><label>面料厚度档（影响耗线系数）</label>
+        <select id="thickness">
+          <option value="thin">薄料（真丝/薄府绸等）</option>
+          <option value="mid" selected>中厚（常规棉/涤/针织）</option>
+          <option value="thick">厚料（牛仔/呢绒/夹层）</option>
+        </select>
+      </div>
+      <div class="field"><label>损耗率 %（线头/断线/换梭）</label><input id="lossRate" type="number" value="8" min="0" step="0.5"></div>
+      <div class="field"><label>面料缩率 %（水洗/热缩补偿）</label><input id="shrinkRate" type="number" value="5" min="0" step="0.5"></div>
+      <div class="field"><label>订单数量（件）</label><input id="orderQty" type="number" value="1000" min="0" step="1"></div>
+      <div class="field"><label>线卷长度（m/卷）</label><input id="coneLen" type="number" value="5000" min="1" step="100"></div>
+    </div>
+    <div class="toolbar">
+      <button class="btn" id="importDxf">导入 DXF 纸样</button>
+      <input type="file" id="dxfFile" accept=".dxf" style="display:none">
+      <button class="btn-ghost" id="btnStitchDb">系数管理</button>
+      <button class="btn-ghost" id="btnSaveStyle">保存款式</button>
+      <button class="btn-ghost" id="btnTemplate">工序模板</button>
+      <button class="btn-ghost" id="btnManageStyles">款式库管理</button>
+      <button class="btn-ghost" id="btnBackup">备份数据</button>
+      <button class="btn-ghost" id="btnRestore">恢复备份</button>
+      <input type="file" id="backupFile" accept=".json" style="display:none">
+      <select id="styleSelect" style="max-width:140px"><option value="">历史款式</option></select>
+      <button class="btn-ghost btn-danger" id="clearAll">清空全部</button>
+    </div>
+    <p class="note">导入 DXF 后，系统会分析版片数据，并从历史款式中寻找类似款式，生成智能工序推荐。</p>
+  </section>
+
+  <!-- 智能推荐面板 -->
+  <div id="smartPanel" class="smart-panel" style="display:none">
+    <h4>智能工序推荐</h4>
+    <div id="recommendations"></div>
+  </div>
+
+  <!-- 计算结果 -->
+  <section class="card">
+    <h2>计算结果</h2>
+    <div class="result-wrap">
+      <div>
+        <div style="color:var(--muted);font-size:12px;margin-bottom:2px">单件用线量（含损耗）</div>
+        <div class="big-num" id="perPiece">0.00 <small>m</small></div>
+        <div class="chips" id="stitchChips"></div>
+      </div>
+      <div>
+        <div class="kv"><span>理论净用量（未含缩率/损耗）</span><span id="netPer">0.00 m</span></div>
+        <div class="kv"><span>缩率补偿量</span><span id="shrinkM">0.00 m</span></div>
+        <div class="kv"><span>损耗余量</span><span id="lossM">0.00 m</span></div>
+        <div class="kv"><span>订单总用线量</span><span id="orderTotal">0 m</span></div>
+        <div class="kv"><span>采购量（按线卷换算）</span><span id="cones">0 卷</span></div>
+        <div class="toolbar">
+          <button class="btn" id="exportCsv">导出明细 CSV</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 左右对比编辑 -->
+  <div class="compare-view">
+    <!-- 左边：新款式工序明细 -->
+    <div class="compare-panel">
+      <h3>新款式工序明细（可编辑）</h3>
+      <div class="table-container">
+        <table id="opTable">
+          <thead>
+            <tr>
+              <th style="width:34px">#</th>
+              <th style="min-width:130px">部位 / 工序</th>
+              <th style="min-width:130px">线迹类型</th>
+              <th>参数</th>
+              <th style="width:90px">小计（m）</th>
+              <th style="width:130px">操作</th>
+            </tr>
+          </thead>
+          <tbody id="opBody"></tbody>
+        </table>
+      </div>
+      <div class="toolbar">
+        <button class="btn" id="btnAddToLibrary">添加到款式数据库</button>
+      </div>
+      <p class="note">缝迹长度可用服装 CAD 量取（或皮尺沿缝迹量）。耗线比已按面料厚度档自动带出，可直接修改覆盖；针距明显加密时建议上调 10–15%。</p>
+    </div>
+
+    <!-- 右边：历史款式工序明细 -->
+    <div class="compare-panel">
+      <h3>历史款式工序明细（点击应用）</h3>
+      <div class="table-container">
+        <div id="styleOpsList"></div>
+      </div>
+      <p class="note">点击历史工序可添加到左边新款式。支持批量选择和单个添加。</p>
+    </div>
+  </div>
+
+  <!-- 耗线系数参考表 -->
+  <section class="card">
+    <h2>耗线系数参考表（行业经验值，可按实测修正）</h2>
+    <table class="ref-table">
+      <thead><tr><th>线迹</th><th>典型用途</th><th>薄料</th><th>中厚</th><th>厚料</th><th>Coats标准</th></tr></thead>
+      <tbody id="refBody"></tbody>
+    </table>
+    <p class="note">系数 = 用线长度 ÷ 缝迹长度。锁眼 / 钉扣 / 套结为点位定额（m/个），与缝迹长度无关。「Coats标准」为高士（Coats）《Thread Consumption Guide》公布的 7 针/cm 条件下参考值，仅供对照，不参与计算。</p>
+  </section>
+</main>
+
+<!-- 系数管理面板 -->
+<div id="stitchModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center">
+  <div style="background:var(--bg);padding:20px;border-radius:8px;max-width:600px;max-height:80vh;overflow:auto">
+    <h3 style="margin:0 0 12px">耗线比系数管理</h3>
+    <div id="stitchDbTable"></div>
+    <div style="margin-top:12px;text-align:right">
+      <button class="btn-ghost" id="btnResetStitches">恢复默认</button>
+      <button class="btn" id="btnSaveStitches">保存并关闭</button>
+    </div>
+  </div>
+</div>
+
+<!-- 工序模板模态框 -->
+<div id="templateModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center">
+  <div style="background:var(--bg);padding:20px;border-radius:8px;max-width:600px;max-height:80vh;overflow:auto">
+    <h3 style="margin:0 0 12px">工序模板</h3>
+    <div style="margin-bottom:12px">
+      <button class="btn-ghost" id="btnSaveAsTemplate">保存当前为模板</button>
+      <select id="templateSelect" style="max-width:200px;margin-left:8px"><option value="">选择模板</option></select>
+      <button class="btn-ghost" id="btnApplyTemplate" style="margin-left:8px">应用</button>
+      <button class="btn-ghost btn-danger" id="btnDeleteTemplate" style="margin-left:4px">删除</button>
+    </div>
+    <div id="templateList" style="max-height:300px;overflow-y:auto"></div>
+    <div style="margin-top:12px;text-align:right">
+      <button class="btn" id="btnCloseTemplate">关闭</button>
+    </div>
+  </div>
+</div>
+
+<!-- 款式库管理模态框 -->
+<div id="stylesManageModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center">
+  <div style="background:var(--bg);padding:24px;border-radius:10px;width:640px;max-width:92vw;max-height:80vh;overflow:auto">
+    <h3 style="margin:0 0 14px">款式库管理</h3>
+    <div style="margin-bottom:10px;padding:8px 10px;background:rgba(0,0,0,.03);border-radius:6px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+      <label style="display:flex;align-items:center;gap:6px;font-size:13px;white-space:nowrap;cursor:pointer">
+        <input type="checkbox" id="styleCheckAll" style="margin:0"> 全选
+      </label>
+      <input id="styleSearch" placeholder="搜索款式名称" style="flex:1;min-width:120px;width:auto;padding:5px 8px;font-size:12px">
+      <button class="btn-ghost" id="btnExportStyles" style="font-size:12px;padding:5px 12px;white-space:nowrap">导出选中为 JSON（供 AI 学习）</button>
+    </div>
+    <div id="stylesManageList" style="max-height:420px;overflow-y:auto"></div>
+    <div style="margin-top:12px;text-align:right">
+      <button class="btn" id="btnCloseStylesManage">关闭</button>
+    </div>
+  </div>
+</div>
+
+<!-- 版本更新模态框 -->
+<div id="updateModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:1200;align-items:center;justify-content:center">
+  <div style="background:var(--bg);padding:24px;border-radius:10px;width:560px;max-width:92vw;max-height:80vh;overflow:auto">
+    <h3 id="updateTitle" style="margin:0 0 6px">发现新版本</h3>
+    <div id="updateMeta" style="font-size:12px;color:var(--muted);margin-bottom:12px"></div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:4px">更新内容</div>
+    <pre id="updateNotes" style="white-space:pre-wrap;word-break:break-word;font:inherit;font-size:13px;background:rgba(0,0,0,.04);padding:10px 12px;border-radius:6px;max-height:240px;overflow:auto;margin:0 0 14px"></pre>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:flex-end">
+      <button class="btn-ghost" id="btnSkipUpdate" style="margin-right:auto">跳过此版本</button>
+      <a id="updatePageLink" href="#" target="_blank" rel="noopener" style="font-size:12px;color:var(--brand-dark);text-decoration:none;padding:8px 4px">打开发布页</a>
+      <a id="updateWebLink" href="#" target="_blank" rel="noopener" style="font-size:12px;color:var(--brand-dark);text-decoration:none;padding:8px 4px">网页版</a>
+      <button class="btn" id="btnDownloadUpdate">下载最新版本</button>
+      <button class="btn-ghost" id="btnCloseUpdate">稍后</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ==================== 版本与更新检测 ====================
+const APP_VERSION = "2.1.0";
+const GH_OWNER = "Jaylorandy";
+const GH_REPO = "thread-consumption-calculator";
+const GH_RELEASE_API = `https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/releases/latest`;
+const GH_RELEASE_PAGE = `https://github.com/${GH_OWNER}/${GH_REPO}/releases/latest`;
+const GH_PAGES_URL = `https://${GH_OWNER.toLowerCase()}.github.io/${GH_REPO}/`;
+const GH_VERSION_JSON = `https://raw.githubusercontent.com/${GH_OWNER}/${GH_REPO}/main/version.json`;
+
+// 内置学习款式（从孙鑫.xlsx 导入）
+const BUILTIN_STYLES = [
+  { name: "784LK 外套", rows: [{id:1,name:"勾上级领",stitch:"301",len:65,qty:1,ratio:3.45},{id:2,name:"压上级领线",stitch:"401",len:65,qty:1,ratio:7.7},{id:3,name:"折压月光领*2",stitch:"301",len:30,qty:6,ratio:3.45},{id:4,name:"装面 里领",stitch:"301",len:46,qty:2,ratio:3.45},{id:5,name:"压后领",stitch:"401",len:30,qty:1,ratio:4.26},{id:6,name:"订主唛 尺码唛",stitch:"301",len:0,qty:1,ratio:0},{id:7,name:"拉 剪 订后中耳仔*1",stitch:"301",len:15,qty:2,ratio:3.85},{id:8,name:"卷前袋口*2",stitch:"401",len:23,qty:2,ratio:7.7},{id:9,name:"贴袋*2",stitch:"301",len:58,qty:2,ratio:3.45},{id:10,name:"拷合前横*2",stitch:"516",len:27,qty:2,ratio:23.76},{id:11,name:"压前横*2",stitch:"514",len:27,qty:2,ratio:14.13},{id:12,name:"模板合门巾*2",stitch:"301",len:73,qty:2,ratio:3.45},{id:13,name:"压门巾*2",stitch:"401",len:73,qty:2,ratio:7.7},{id:14,name:"走订面里门巾*2",stitch:"301",len:77,qty:2,ratio:3.45},{id:15,name:"拷里挂面肩散口*2",stitch:"514",len:22,qty:2,ratio:15.8},{id:16,name:"走订挂面肩散口*2",stitch:"301",len:18,qty:2,ratio:3.85},{id:17,name:"合前公主缝一段*2",stitch:"301",len:10,qty:2,ratio:3.85},{id:18,name:"拷合前公主缝*2",stitch:"516",len:57,qty:2,ratio:25.19},{id:19,name:"压前公主缝*2",stitch:"514",len:54,qty:2,ratio:15.17},{id:20,name:"的针*4",stitch:"401",len:2,qty:4,ratio:4.26},{id:21,name:"拷后中缝*1",stitch:"516",len:40,qty:1,ratio:23.76},{id:22,name:"压后中缝*1",stitch:"514",len:40,qty:1,ratio:14.13},{id:23,name:"拷后担干*1",stitch:"516",len:50,qty:1,ratio:23.76},{id:24,name:"压后担干*1",stitch:"514",len:50,qty:1,ratio:14.13},{id:25,name:"拷后背贴散口*1",stitch:"514",len:50,qty:1,ratio:15.8},{id:26,name:"折压后背贴*1",stitch:"301",len:50,qty:1,ratio:3.45},{id:27,name:"走订后背贴*1",stitch:"301",len:10,qty:1,ratio:3.45},{id:28,name:"拷合 袖侧缝*2",stitch:"516",len:59,qty:2,ratio:23.76},{id:29,name:"压袖侧缝*2",stitch:"514",len:59,qty:2,ratio:14.13},{id:30,name:"定活褶*2",stitch:"301",len:15,qty:2,ratio:3.45},{id:31,name:"接袖口*2",stitch:"301",len:12,qty:2,ratio:3.45},{id:32,name:"装 压袖口*2",stitch:"301",len:30,qty:4,ratio:3.85},{id:33,name:"合肩缝*2",stitch:"516",len:22,qty:2,ratio:23.76},{id:34,name:"压肩缝*2",stitch:"514",len:22,qty:2,ratio:14.13},{id:35,name:"上袖*2",stitch:"516",len:74,qty:2,ratio:23.76},{id:36,name:"压袖笼*2",stitch:"514",len:74,qty:2,ratio:14.13},{id:37,name:"合侧缝*2",stitch:"516",len:68,qty:2,ratio:23.76},{id:38,name:"装 压下摆",stitch:"301",len:100,qty:2,ratio:3.85},{id:39,name:"订洗水唛*1  订PO*1",stitch:"301",len:10,qty:1,ratio:3.45},{id:40,name:"打枣*4",stitch:"tack",len:0,qty:4,ratio:0}], thickness: "mid", loss: 8, actual: 355.43 },
+  { name: "0503 长裤", rows: [{id:1,name:"明订腰头主唛 两头(包胶袋）",stitch:"301",len:5,qty:2,ratio:3.45},{id:2,name:"订尺码唛",stitch:"301",len:5,qty:1,ratio:3.45},{id:3,name:"订PO标",stitch:"301",len:7,qty:1,ratio:3.45},{id:4,name:"拉腰头",stitch:"301",len:0,qty:1,ratio:0},{id:5,name:"拉腰头",stitch:"514",len:110,qty:1,ratio:16.21},{id:6,name:"封腰头*2",stitch:"401",len:20,qty:3,ratio:4.67},{id:7,name:"拉腰袢",stitch:"516",len:70,qty:1,ratio:20.05},{id:8,name:"订马王袢机*5",stitch:"301",len:0,qty:5,ratio:0},{id:9,name:"自动订马王袢机*5",stitch:"301",len:1,qty:12,ratio:79.42},{id:10,name:"卷币袋",stitch:"301",len:12,qty:1,ratio:3.85},{id:11,name:"贴币袋",stitch:"401",len:12,qty:2,ratio:7.7},{id:12,name:"拷袋贴布*2",stitch:"514",len:33,qty:2,ratio:15.8},{id:13,name:"落代贴布*2",stitch:"301",len:33,qty:2,ratio:3.45},{id:14,name:"拼前代口*2",stitch:"301",len:22,qty:2,ratio:3.45},{id:15,name:"压前代口*2",stitch:"401",len:22,qty:2,ratio:7.7},{id:16,name:"合前代布底*2",stitch:"301",len:28,qty:2,ratio:3.45},{id:17,name:"翻前代布*2",stitch:"301",len:0,qty:1,ratio:0},{id:18,name:"压前代布底0.6线",stitch:"301",len:28,qty:2,ratio:3.85},{id:19,name:"前代侧、代顶订位*2*2",stitch:"301",len:10,qty:4,ratio:3.85},{id:20,name:"拷前浪散口*2",stitch:"514",len:33,qty:2,ratio:15.8},{id:21,name:"运翻拉链里牌",stitch:"514",len:15,qty:2,ratio:16.72},{id:22,name:"拷面牌散口",stitch:"514",len:24,qty:1,ratio:15.8},{id:23,name:"落拉链双线",stitch:"401",len:19,qty:1,ratio:6.89},{id:24,name:"折压装面牌",stitch:"301",len:19,qty:2,ratio:3.85},{id:25,name:"缉前巾J形单明线",stitch:"401",len:23,qty:1,ratio:6.89},{id:26,name:"缉上里巾和拉链及压前裆缝",stitch:"401",len:19,qty:4,ratio:4.67},{id:27,name:"车后袋装饰线*2",stitch:"301",len:0,qty:1,ratio:0},{id:28,name:"环口车后袋口线*2",stitch:"301",len:21,qty:2,ratio:3.85},{id:29,name:"合后机头*2",stitch:"514",len:33,qty:2,ratio:14.13},{id:30,name:"自动贴代机贴后袋*2",stitch:"401",len:48,qty:2,ratio:7.7},{id:31,name:"订织标*1",stitch:"301",len:0,qty:1,ratio:0},{id:32,name:"合后浪*1",stitch:"514",len:44,qty:1,ratio:14.13},{id:33,name:"合内裆缝*1",stitch:"516",len:170,qty:1,ratio:25.19},{id:34,name:"压内裆缝*1",stitch:"514",len:170,qty:1,ratio:14.13},{id:35,name:"订洗唛（包袋）",stitch:"301",len:10,qty:1,ratio:3.85},{id:36,name:"合外侧缝*2",stitch:"516",len:110,qty:2,ratio:23.76},{id:37,name:"压外侧缝明线*2",stitch:"301",len:22,qty:2,ratio:3.85},{id:38,name:"卷脚口*2",stitch:"301",len:48,qty:2,ratio:3.85},{id:39,name:"打枣*2",stitch:"tack",len:1.5,qty:4,ratio:0.8613},{id:40,name:"打枣*10",stitch:"tack",len:1,qty:5,ratio:0.5742},{id:41,name:"锁眼*1",stitch:"hole",len:3,qty:1,ratio:2.046},{id:42,name:"订皮牌",stitch:"401",len:28,qty:1,ratio:4.67}], thickness: "mid", loss: 8, actual: 277.59 },
+  { name: "0019 夹克", rows: [{id:1,name:"勾上级领",stitch:"301",len:76,qty:1,ratio:3.45},{id:2,name:"压上级领线",stitch:"301",len:76,qty:1,ratio:3.85},{id:3,name:"上领",stitch:"301",len:54,qty:1,ratio:3.45},{id:4,name:"压领",stitch:"301",len:54,qty:1,ratio:3.85},{id:5,name:"订尺码唛",stitch:"301",len:0,qty:1,ratio:0},{id:6,name:"订主唛",stitch:"301",len:9,qty:2,ratio:3.85},{id:7,name:"五线拷合前中缝*2*2",stitch:"516",len:52,qty:2,ratio:23.76},{id:8,name:"压前中缝*2*2双线",stitch:"514",len:52,qty:2,ratio:14.13},{id:9,name:"勾袋盖*2",stitch:"301",len:28,qty:2,ratio:3.45},{id:10,name:"压袋盖*2",stitch:"401",len:28,qty:2,ratio:7.7},{id:11,name:"走订袋盖*2",stitch:"301",len:16,qty:2,ratio:3.45},{id:12,name:"定袋盖*2",stitch:"301",len:16,qty:2,ratio:3.85},{id:13,name:"拷前胸贴布*2",stitch:"514",len:18,qty:2,ratio:15.8},{id:14,name:"落前胸贴布*2",stitch:"301",len:16,qty:2,ratio:3.45},{id:15,name:"开前胸一字袋*2",stitch:"301",len:16,qty:2,ratio:3.45},{id:16,name:"压前胸袋及定袋布*2",stitch:"301",len:16,qty:4,ratio:3.85},{id:17,name:"贴前胸袋*2",stitch:"301",len:43,qty:2,ratio:3.85},{id:18,name:"五线拷合前担干*2",stitch:"516",len:33,qty:2,ratio:23.76},{id:19,name:"压前担干*2双线",stitch:"514",len:29,qty:2,ratio:14.13},{id:20,name:"勾门巾*2",stitch:"301",len:10,qty:2,ratio:3.85},{id:21,name:"压门巾*2",stitch:"301",len:61,qty:2,ratio:3.85},{id:22,name:"拷前侧袋贴布*2",stitch:"514",len:32,qty:2,ratio:15.8},{id:23,name:"落前侧袋贴布*2",stitch:"301",len:28,qty:2,ratio:3.45},{id:24,name:"模板开袋*2",stitch:"401",len:20,qty:4,ratio:4.26},{id:25,name:"封角*4 压袋*2",stitch:"401",len:20,qty:6,ratio:4.67},{id:26,name:"合袋布*2",stitch:"516",len:28,qty:4,ratio:23.76},{id:27,name:"定袋布*2",stitch:"301",len:25,qty:4,ratio:3.45},{id:28,name:"打枣*4",stitch:"tack",len:2,qty:8,ratio:1.3684},{id:29,name:"拉挂耳*1",stitch:"401",len:10,qty:1,ratio:4.26},{id:30,name:"订挂耳*1",stitch:"301",len:10,qty:1,ratio:3.85},{id:31,name:"合后侧*2",stitch:"516",len:54,qty:2,ratio:23.76},{id:32,name:"压后侧*2",stitch:"514",len:54,qty:2,ratio:14.13},{id:33,name:"合后担干",stitch:"516",len:53,qty:1,ratio:23.76},{id:34,name:"压后担干",stitch:"514",len:53,qty:1,ratio:14.13},{id:35,name:"拷袖叉口一段*4",stitch:"514",len:10,qty:4,ratio:15.8},{id:36,name:"双针卷袖叉口一段*4",stitch:"401",len:11,qty:4,ratio:6.89},{id:37,name:"定大，小袖*2",stitch:"301",len:10,qty:2,ratio:3.45},{id:38,name:"五线拼袖侧缝*2（定好位）",stitch:"516",len:49,qty:2,ratio:23.76},{id:39,name:"双针压袖侧缝*2",stitch:"514",len:49,qty:2,ratio:14.13},{id:40,name:"平车拼介英两头*4（包头）",stitch:"301",len:8,qty:4,ratio:3.45},{id:41,name:"平车装介英压明单线一周*3+比位、有折",stitch:"401",len:70,qty:2,ratio:4.67},{id:42,name:"合肩缝*2",stitch:"516",len:22,qty:2,ratio:23.76},{id:43,name:"压肩缝*2",stitch:"514",len:22,qty:2,ratio:14.13},{id:44,name:"上袖*2",stitch:"516",len:74,qty:2,ratio:23.76},{id:45,name:"压袖笼*2",stitch:"514",len:74,qty:2,ratio:14.13},{id:46,name:"合侧缝*2",stitch:"516",len:88,qty:2,ratio:23.76},{id:47,name:"夹装下摆",stitch:"401",len:122,qty:1,ratio:4.26},{id:48,name:"压下摆",stitch:"301",len:132,qty:1,ratio:3.45},{id:49,name:"订洗水唛*1  订PO*1",stitch:"301",len:10,qty:1,ratio:3.45},{id:50,name:"锁凤眼",stitch:"hole",len:3,qty:12,ratio:2.211},{id:51,name:"打枣*4",stitch:"tack",len:1,qty:2,ratio:0.5742},{id:52,name:"勾下摆袢*2",stitch:"301",len:24,qty:2,ratio:3.45},{id:53,name:"压下摆袢*2",stitch:"301",len:24,qty:2,ratio:3.85},{id:54,name:"装压下摆袢*2",stitch:"401",len:8,qty:4,ratio:4.67}], thickness: "mid", loss: 8, actual: 472.15 },
+  { name: "0056 短裤", rows: [{id:1,name:"明订腰头主唛 两头(包胶袋）",stitch:"301",len:5,qty:2,ratio:3.45},{id:2,name:"订尺码唛",stitch:"301",len:5,qty:1,ratio:3.45},{id:3,name:"订PO标",stitch:"301",len:7,qty:1,ratio:3.45},{id:4,name:"拉腰头",stitch:"301",len:0,qty:1,ratio:0},{id:5,name:"拉腰头",stitch:"401",len:110,qty:2,ratio:8.11},{id:6,name:"封腰头*2",stitch:"401",len:20,qty:2,ratio:4.67},{id:7,name:"拉腰袢",stitch:"516",len:70,qty:1,ratio:20.05},{id:8,name:"订马王袢机*5",stitch:"301",len:0,qty:5,ratio:0},{id:9,name:"自动订马王袢机*5",stitch:"301",len:1,qty:10,ratio:79.42},{id:10,name:"卷币袋",stitch:"301",len:12,qty:1,ratio:3.85},{id:11,name:"贴币袋",stitch:"401",len:11,qty:2,ratio:7.7},{id:12,name:"拷袋贴布*2",stitch:"514",len:33,qty:2,ratio:15.8},{id:13,name:"落代贴布*2",stitch:"301",len:33,qty:2,ratio:3.45},{id:14,name:"拼前代口*2",stitch:"301",len:22,qty:2,ratio:3.45},{id:15,name:"压前代口*2",stitch:"401",len:22,qty:2,ratio:7.7},{id:16,name:"合前代布底*2",stitch:"301",len:24,qty:2,ratio:3.45},{id:17,name:"翻前代布*2",stitch:"301",len:0,qty:1,ratio:0},{id:18,name:"压前代布底0.6线",stitch:"301",len:24,qty:2,ratio:3.85},{id:19,name:"前代侧、代顶订位*2*2",stitch:"301",len:10,qty:4,ratio:3.85},{id:20,name:"拷前浪散口*2",stitch:"514",len:33,qty:2,ratio:15.8},{id:21,name:"运翻拉链里牌",stitch:"514",len:15,qty:2,ratio:16.72},{id:22,name:"拷面牌散口",stitch:"514",len:24,qty:1,ratio:15.8},{id:23,name:"落拉链双线",stitch:"401",len:19,qty:1,ratio:6.89},{id:24,name:"折压装面牌",stitch:"301",len:19,qty:2,ratio:3.85},{id:25,name:"缉前巾J形单明线",stitch:"401",len:23,qty:1,ratio:6.89},{id:26,name:"缉上里巾和拉链及压前裆缝",stitch:"401",len:19,qty:4,ratio:4.67},{id:27,name:"车后袋装饰线*2",stitch:"301",len:0,qty:2,ratio:0},{id:28,name:"环口车后袋口线*2",stitch:"401",len:21,qty:2,ratio:7.7},{id:29,name:"合后机头*2",stitch:"514",len:33,qty:2,ratio:14.13},{id:30,name:"自动贴代机贴后袋*2",stitch:"401",len:45,qty:2,ratio:7.7},{id:31,name:"订织标*1",stitch:"301",len:0,qty:1,ratio:0},{id:32,name:"合后浪*1",stitch:"514",len:44,qty:1,ratio:14.13},{id:33,name:"合内裆缝*1",stitch:"516",len:66,qty:1,ratio:23.76},{id:34,name:"压内裆缝*1",stitch:"301",len:0,qty:1,ratio:0},{id:35,name:"订洗唛（包袋）",stitch:"301",len:10,qty:1,ratio:3.85},{id:36,name:"拷外侧缝*2*2",stitch:"516",len:58,qty:4,ratio:23.76},{id:37,name:"合外侧缝*2",stitch:"301",len:0,qty:2,ratio:0},{id:38,name:"压外侧缝明线*2",stitch:"301",len:22,qty:2,ratio:3.85},{id:39,name:"卷脚口*2",stitch:"301",len:68,qty:2,ratio:3.85},{id:40,name:"打枣*2",stitch:"tack",len:0,qty:4,ratio:0},{id:41,name:"打枣*10",stitch:"tack",len:1,qty:10,ratio:0.5742},{id:42,name:"锁眼*1",stitch:"hole",len:3,qty:1,ratio:2.046},{id:43,name:"订皮牌",stitch:"301",len:0,qty:1,ratio:0}], thickness: "mid", loss: 8, actual: 224.19 }
+];
+
+// coats 字段仅为 Coats《Thread Consumption Guide》标准参考值（7针/cm条件下），不参与计算
+let STITCHES = {
+  "301":  { name: "301 平缝",        kind: "seam",  use: "合缝/明线",       ratios: { thin: 2.5, mid: 3.0, thick: 3.5 }, coats: 2.5 },
+  "101":  { name: "101 单线链式",    kind: "seam",  use: "暗缝/装饰链线",   ratios: { thin: 3.5, mid: 4.0, thick: 4.5 }, coats: 4.0 },
+  "401":  { name: "401 双线链式",    kind: "seam",  use: "裤后裆/摆缝",     ratios: { thin: 4.0, mid: 4.8, thick: 5.5 }, coats: 5.5 },
+  "401x2":{ name: "双针埋夹/链式",   kind: "seam",  use: "裤侧缝/内缝双针", ratios: { thin: 6.0, mid: 7.5, thick: 9.0 }, coats: null },
+  "304":  { name: "304 曲折缝",      kind: "seam",  use: "锁边/装饰",       ratios: { thin: 6.0, mid: 7.0, thick: 8.0 }, coats: 7.0 },
+  "503":  { name: "503 两线包缝",    kind: "seam",  use: "薄料拷边",        ratios: { thin: 10,  mid: 12,  thick: 14  }, coats: 12.0 },
+  "504":  { name: "504 三线包缝",    kind: "seam",  use: "拷边",            ratios: { thin: 12,  mid: 14,  thick: 16  }, coats: 14.0 },
+  "514":  { name: "514 四线包缝",    kind: "seam",  use: "针织合缝",        ratios: { thin: 16,  mid: 18,  thick: 21  }, coats: 18.0 },
+  "516":  { name: "516 五线包缝",    kind: "seam",  use: "裤侧缝/内缝",     ratios: { thin: 20,  mid: 24,  thick: 28  }, coats: 20.0 },
+  "406":  { name: "406 三线绷缝",    kind: "seam",  use: "下摆/袖口",       ratios: { thin: 20,  mid: 24,  thick: 28  }, coats: 18.0 },
+  "602":  { name: "602 四线绷缝",    kind: "seam",  use: "厚料下摆/袖口",   ratios: { thin: 22,  mid: 25,  thick: 28  }, coats: 25.0 },
+  "605":  { name: "605 五线绷缝",    kind: "seam",  use: "厚料宽绷缝",      ratios: { thin: 25,  mid: 28,  thick: 31  }, coats: 28.0 },
+  "hole": { name: "平头锁眼",        kind: "point", use: "门襟锁眼",        perUnit: 1.2, coats: null },
+  "hole2":{ name: "圆头锁眼",        kind: "point", use: "裤头/夹克凤眼",   perUnit: 0.2, coats: null },
+  "btn":  { name: "钉扣",            kind: "point", use: "钉纽扣",          perUnit: 0.6, coats: null },
+  "tack": { name: "套结 / 打枣",     kind: "point", use: "袋口/缝端加固",   perUnit: 0.7, coats: null }
+};
+
+// 从 localStorage 加载自定义系数（以默认表为基准合并，保证新增线迹类型始终显示）
+function loadStitches() {
+  const merged = JSON.parse(JSON.stringify(STITCHES));
+  const saved = localStorage.getItem("threadCalcStitches");
+  if (saved) {
+    try {
+      const obj = JSON.parse(saved);
+      Object.keys(obj).forEach(k => {
+        if (!merged[k]) return;
+        if (obj[k].ratios && merged[k].ratios) Object.assign(merged[k].ratios, obj[k].ratios);
+        if (typeof obj[k].perUnit === "number") merged[k].perUnit = obj[k].perUnit;
+      });
+    } catch (e) { /* 数据损坏时使用默认值 */ }
+  }
+  return merged;
+}
+
+let rows = [];
+let nextId = 1;
+let addedStyleOps = new Set(); // 跟踪已添加的历史工序
+
+const $ = s => document.querySelector(s);
+
+function defaultRatio(stitchKey){
+  const st = STITCHES[stitchKey];
+  if (st.kind === "point") return st.perUnit;
+  return st.ratios[$("#thickness").value];
+}
+
+// 按工序名称推断线迹类型（服装工艺常识），无法判断时回落到平缝 301
+function autoStitch(name){
+  const n = name || "";
+  if (/打枣|套结|套結|bar\s*tack/i.test(n)) return "tack";
+  if (/圆头眼|圆头锁眼|圆眼|凤眼/.test(n)) return "hole2";
+  if (/锁眼|鳳眼|buttonhole/i.test(n)) return "hole";
+  if (/钉扣|订扣|钉纽|订纽|钉鈕|钉工字扣|button/i.test(n)) return "btn";
+  if (/埋夹|埋夾|后浪|后裆|后裆缝/.test(n)) return "401x2";
+  if (/拷边|包缝|拷克|锁边|打边|overlock/i.test(n)) return "516";
+  if (/合侧缝|合内缝|侧缝|内缝|合缝|拼缝|合肩|合袖|缝合/.test(n)) return "516";
+  if (/绷缝|绷边/.test(n)) return "406";
+  if (/曲折|人字|zigzag/i.test(n)) return "304";
+  if (/链式|链缝/.test(n)) return "401";
+  return "301";
+}
+
+function addRow(data, afterId){
+  const r = Object.assign({ id: nextId++, name: "", stitch: "301", len: 50, qty: 1, ratio: defaultRatio("301") }, data || {});
+  if (afterId !== undefined) {
+    const idx = rows.findIndex(x => x.id === afterId);
+    if (idx >= 0) rows.splice(idx + 1, 0, r);
+    else rows.push(r);
+  } else {
+    rows.push(r);
+  }
+  renderRows();
+  recalc();
+  save();
+}
+
+function renderRows(){
+  const tb = $("#opBody");
+  tb.innerHTML = rows.map((r, i) => {
+    const st = STITCHES[r.stitch];
+    const isPoint = st.kind === "point";
+    const subtotal = rowMeters(r);
+    return `<tr data-id="${r.id}">
+      <td>${i + 1}</td>
+      <td><input value="${r.name}" data-f="name"></td>
+      <td>
+        <select data-f="stitch">
+          ${Object.keys(STITCHES).map(k => `<option value="${k}" ${k === r.stitch ? "selected" : ""}>${STITCHES[k].name}</option>`).join("")}
+        </select>
+      </td>
+      <td>
+        <div class="rowparams">
+          ${isPoint ? "" : `<div class="mini"><span>缝迹长度 cm</span><input type="number" value="${r.len}" data-f="len" min="0" step="0.5"></div>`}
+          <div class="mini"><span>数量</span><input type="number" value="${r.qty}" data-f="qty" min="0" step="1"></div>
+          <div class="mini"><span>${isPoint ? "单点定额 m" : "耗线比"}</span><input type="number" value="${r.ratio}" data-f="ratio" min="0" step="0.1"></div>
+        </div>
+      </td>
+      <td class="subtotal">${subtotal.toFixed(2)}</td>
+      <td>
+        <button class="row-up" title="上移">↑</button>
+        <button class="row-down" title="下移">↓</button>
+        <button class="row-dup" title="复制一行">复</button>
+        <button class="row-add" title="在下方插入">+</button>
+        <button class="row-del" title="删除">×</button>
+      </td>
+    </tr>`;
+  }).join("");
+}
+
+function rowMeters(r){
+  const st = STITCHES[r.stitch];
+  if (st.kind === "point") return r.ratio * r.qty;
+  return r.len * r.qty * r.ratio / 100;
+}
+
+function recalc(){
+  const lossRate = Math.max(0, parseFloat($("#lossRate").value) || 0) / 100;
+  const shrinkRate = Math.max(0, parseFloat($("#shrinkRate").value) || 0) / 100;
+  const net = rows.reduce((s, r) => s + rowMeters(r), 0);
+  const shrunk = net * (1 + shrinkRate);
+  const per = shrunk * (1 + lossRate);
+  const orderQty = parseFloat($("#orderQty").value) || 0;
+  const coneLen = parseFloat($("#coneLen").value) || 5000;
+
+  $("#netPer").textContent = net.toFixed(2) + " m";
+  $("#perPiece").innerHTML = per.toFixed(2) + " <small>m</small>";
+  $("#shrinkM").textContent = (shrunk - net).toFixed(2) + " m";
+  $("#lossM").textContent = (per - shrunk).toFixed(2) + " m";
+  $("#orderTotal").textContent = (per * orderQty).toFixed(0) + " m";
+  $("#cones").textContent = Math.ceil(per * orderQty / coneLen) + " 卷";
+  
+  // 按线迹类型汇总
+  const byStitch = {};
+  rows.forEach(r => {
+    const st = STITCHES[r.stitch];
+    const m = rowMeters(r);
+    byStitch[st.name] = (byStitch[st.name] || 0) + m;
+  });
+  $("#stitchChips").innerHTML = Object.entries(byStitch).map(([k, v]) => `<span class="chip">${k}: ${v.toFixed(1)}m</span>`).join("");
+}
+
+function save(){
+  const data = {
+    styleNo: $("#styleNo").value,
+    thickness: $("#thickness").value,
+    lossRate: $("#lossRate").value,
+    shrinkRate: $("#shrinkRate").value,
+    orderQty: $("#orderQty").value,
+    coneLen: $("#coneLen").value,
+    rows: rows,
+    nextId: nextId
+  };
+  localStorage.setItem("threadCalcV1", JSON.stringify(data));
+}
+
+function loadState(){
+  const saved = localStorage.getItem("threadCalcV1");
+  if (!saved) return false;
+  try {
+    const s = JSON.parse(saved);
+    $("#styleNo").value = s.styleNo || "";
+    $("#thickness").value = s.thickness || "mid";
+    $("#lossRate").value = s.lossRate || 8;
+    $("#shrinkRate").value = (s.shrinkRate !== undefined && s.shrinkRate !== "" ? s.shrinkRate : 5);
+    $("#orderQty").value = s.orderQty || 1000;
+    $("#coneLen").value = s.coneLen || 5000;
+    rows = s.rows || [];
+    nextId = s.nextId || (rows.length + 1);
+    renderRows(); recalc();
+    return rows.length > 0;
+  } catch (e) { return false; }
+}
+
+// DXF 解析：支持 POLYLINE / VERTEX、LWPOLYLINE、ARC，并保留弧段凸度（bulge）用于真实弧长计算
+function parseDXF(text) {
+  const blocks = [];
+  const lines = text.replace(/^\uFEFF/, "").split(/\r\n|\r|\n/);
+
+  // 组装 (组码, 值) 对
+  const pairs = [];
+  for (let i = 0; i + 1 < lines.length; i += 2) {
+    const code = parseInt(lines[i].trim(), 10);
+    if (isNaN(code)) { i--; continue; } // 容错：跳过无法识别的行，重新对齐
+    pairs.push([code, lines[i + 1]]);
+  }
+
+  // 按组码 0 切分为实体块
+  const chunks = [];
+  let chunk = null;
+  pairs.forEach(([code, val]) => {
+    if (code === 0) {
+      if (chunk) chunks.push(chunk);
+      chunk = { type: val.trim().toUpperCase(), data: [] };
+    } else if (chunk) {
+      chunk.data.push([code, val]);
+    }
+  });
+  if (chunk) chunks.push(chunk);
+
+  const val = (data, code) => {
+    const p = data.find(d => d[0] === code);
+    return p ? p[1].trim() : "";
+  };
+  const rad = d => d * Math.PI / 180;
+
+  let cur = null;
+  for (let i = 0; i < chunks.length; i++) {
+    const c = chunks[i];
+
+    if (c.type === "BLOCK") {
+      const namePair = c.data.find(d => d[0] === 2);
+      cur = { name: namePair ? namePair[1].trim() : "未命名", polys: [] };
+      blocks.push(cur);
+      continue;
+    }
+    if (c.type === "ENDBLK") { cur = null; continue; }
+    if (!cur) continue;
+
+    if (c.type === "POLYLINE") {
+      const layer = val(c.data, 8) || "0";
+      const closed = (parseInt(val(c.data, 70) || "0", 10) & 1) ? 1 : 0;
+      const verts = [], bulges = [];
+      let j = i + 1;
+      for (; j < chunks.length && chunks[j].type === "VERTEX"; j++) {
+        const x = parseFloat(val(chunks[j].data, 10));
+        const y = parseFloat(val(chunks[j].data, 20));
+        const b = parseFloat(val(chunks[j].data, 42) || "0");
+        if (isFinite(x) && isFinite(y)) {
+          verts.push([x, y]);
+          bulges.push(isFinite(b) ? b : 0);
+        }
+      }
+      if (verts.length >= 2) cur.polys.push({ layer, closed, verts, bulges });
+      i = j - 1; // 跳过已消费的 VERTEX 与 SEQEND
+      continue;
+    }
+
+    if (c.type === "LWPOLYLINE") {
+      const layer = val(c.data, 8) || "0";
+      const closed = (parseInt(val(c.data, 70) || "0", 10) & 1) ? 1 : 0;
+      const verts = [], bulges = [];
+      let cx = null;
+      c.data.forEach(([code, v]) => {
+        if (code === 10) {
+          cx = parseFloat(v);
+        } else if (code === 20 && cx !== null) {
+          const y = parseFloat(v);
+          if (isFinite(cx) && isFinite(y)) { verts.push([cx, y]); bulges.push(0); }
+          cx = null;
+        } else if (code === 42 && bulges.length > 0) {
+          const b = parseFloat(v);
+          bulges[bulges.length - 1] = isFinite(b) ? b : 0;
+        }
+      });
+      if (verts.length >= 2) cur.polys.push({ layer, closed, verts, bulges });
+      continue;
+    }
+
+    if (c.type === "ARC") {
+      const layer = val(c.data, 8) || "0";
+      const cx = parseFloat(val(c.data, 10));
+      const cy = parseFloat(val(c.data, 20));
+      const r = parseFloat(val(c.data, 40));
+      const a1 = parseFloat(val(c.data, 50));
+      const a2 = parseFloat(val(c.data, 51));
+      if (![cx, cy, r, a1, a2].every(isFinite) || r <= 0) continue;
+      let sweep = a2 - a1;
+      while (sweep <= 0) sweep += 360; // DXF 圆弧为逆时针，从起始角扫到终止角
+      const p1 = [cx + r * Math.cos(rad(a1)), cy + r * Math.sin(rad(a1))];
+      const p2 = [cx + r * Math.cos(rad(a2)), cy + r * Math.sin(rad(a2))];
+      cur.polys.push({ layer, closed: 0, verts: [p1, p2], bulges: [Math.tan(rad(sweep) / 4)] });
+    }
+  }
+  return blocks;
+}
+
+// 单段长度：有凸度时按圆弧计算，无凸度按直线
+function segLength(p1, p2, bulge) {
+  const chord = Math.hypot(p2[0] - p1[0], p2[1] - p1[1]);
+  const b = Math.abs(bulge || 0);
+  if (b < 1e-6) return chord;
+  const theta = 4 * Math.atan(b);              // 圆弧包角
+  const r = chord / (2 * Math.sin(theta / 2)); // 半径
+  return r * theta;
+}
+
+function polyLength(verts, closed, bulges) {
+  if (!verts || verts.length < 2) return 0;
+  const n = verts.length;
+  const isClosed = closed === 1 || closed === "1";
+  const segCount = isClosed ? n : n - 1;
+  let total = 0;
+  for (let i = 0; i < segCount; i++) {
+    const j = (i + 1) % n;
+    total += segLength(verts[i], verts[j], bulges ? bulges[i] : 0);
+  }
+  return total;
+}
+
+function importDXF(file) {
+  // 显示加载状态
+  const btn = $("#importDxf");
+  const originalText = btn.textContent;
+  btn.textContent = "解析中...";
+  btn.disabled = true;
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      let text;
+      // 尝试多种编码
+      const encodings = ["utf-8", "gbk", "gb2312", "big5"];
+      for (const enc of encodings) {
+        try {
+          text = new TextDecoder(enc).decode(e.target.result);
+          // 检测替换字符 U+FFFD（乱码标志）
+          if (!text.includes("�")) break;
+        } catch (err) {
+          continue;
+        }
+      }
+      
+      const blocks = parseDXF(text);
+      if (blocks.length === 0) {
+        alert("未解析到裁片，请确认是服装 CAD 导出的 DXF 文件");
+        btn.textContent = originalText;
+        btn.disabled = false;
+        return;
+      }
+
+      // 自动把款号/款名更新为 DXF 文件名（去掉扩展名）
+      $("#styleNo").value = file.name.replace(/\.[^.]+$/, "");
+      
+      // 生成参考数据表格，不直接生成工序（避免前后片公共边重复计算）
+      let html = '<table style="width:100%;font-size:12px"><tr><th>裁片</th><th>数量</th><th>外轮廓(cm)</th><th>内部线(cm)</th></tr>';
+      blocks.forEach(b => {
+        // 从 polys 中提取中文名称
+        let name = b.name;
+        const polyNames = b.polys.map(p => p.layer).filter(l => /[一-鿿]/.test(l));
+        if (polyNames.length > 0) {
+          name = polyNames[0];
+        }
+        const qtyM = /\*(\d+)(?:芯|\.\d|$)/.exec(name);
+        const qty = qtyM ? parseInt(qtyM[1]) : 1;
+        const layerLens = {};
+        b.polys.forEach(p => {
+          const L = polyLength(p.verts, p.closed, p.bulges) / 10;
+          layerLens[p.layer] = (layerLens[p.layer] || 0) + L;
+        });
+        const outer = (layerLens["1"] || 0).toFixed(1);
+        const inner = (layerLens["8"] || 0).toFixed(1);
+        html += `<tr><td>${name}</td><td>${qty}</td><td>${outer}</td><td>${inner}</td></tr>`;
+      });
+      html += '</table>';
+      
+      const panel = document.getElementById("dxfPanel") || createDxfPanel();
+      panel.innerHTML = '<h3 style="margin:0 0 8px;font-size:13px">DXF 参考数据（请把长度填入左侧对应工序）</h3>' + html;
+      
+      // 添加长度校准工具
+      panel.innerHTML += `
+        <div style="margin-top:12px;padding:10px;background:#fff7ed;border:1px solid #fdba74;border-radius:6px">
+          <strong style="font-size:12px">📏 长度校准（提高精度）</strong><br>
+          <span style="font-size:11px;color:var(--muted)">用皮尺量一条已知实际长度的缝迹（如侧缝），填入下面，系统自动修正所有长度</span>
+          <div style="display:flex;gap:8px;margin-top:6px;align-items:center;font-size:12px">
+            <span>实际长度</span>
+            <input id="calibActual" type="number" placeholder="如 105" style="width:70px;padding:4px">
+            <span>cm，对应软件测量的</span>
+            <input id="calibMeasured" type="number" placeholder="如 98" style="width:70px;padding:4px">
+            <span>cm</span>
+            <button class="btn-ghost" style="padding:4px 10px;font-size:12px" onclick="applyCalibration()">应用校准</button>
+            <span id="calibResult" style="color:var(--brand-dark)"></span>
+          </div>
+        </div>`;
+      
+      panel.style.display = "block";
+      
+      // 智能匹配历史款式（仅显示推荐，不自动应用）
+      const dxfFeatures = extractDxfFeatures(blocks);
+      const recommendations = recommendStyles(dxfFeatures);
+      if (recommendations.length > 0) {
+        showRecommendations(recommendations);
+      }
+      
+      // 基于 DXF 实际测量数据智能生成新工序
+      generateOpsFromDxf(blocks);
+      
+      // 恢复按钮状态
+      btn.textContent = originalText;
+      btn.disabled = false;
+      
+      alert("导入成功！共解析 " + blocks.length + " 个裁片");
+    } catch (err) {
+      alert("导入失败：" + err.message);
+      btn.textContent = originalText;
+      btn.disabled = false;
+    }
+  };
+  reader.onerror = function() {
+    alert("文件读取失败");
+    btn.textContent = originalText;
+    btn.disabled = false;
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function createDxfPanel() {
+  const panel = document.createElement("div");
+  panel.id = "dxfPanel";
+  panel.className = "card";
+  panel.style.marginTop = "16px";
+  document.querySelector("main").appendChild(panel);
+  return panel;
+}
+
+// 长度校准
+function applyCalibration() {
+  const actual = parseFloat(document.getElementById("calibActual").value);
+  const measured = parseFloat(document.getElementById("calibMeasured").value);
+  if (!actual || !measured || measured <= 0) {
+    alert("请输入有效的实际长度和测量长度");
+    return;
+  }
+  const factor = actual / measured;
+  // 校准左侧所有工序长度
+  rows.forEach(r => {
+    if (r.len > 0) r.len = Math.round(r.len * factor * 10) / 10;
+  });
+  renderRows();
+  recalc();
+  save();
+  document.getElementById("calibResult").textContent = `已校准（系数 ${factor.toFixed(3)}），所有长度已按比例修正`;
+}
+
+// 提取 DXF 特征
+function extractDxfFeatures(blocks) {
+  let totalOuter = 0;
+  let totalInner = 0;
+  let totalQty = 0;
+  const layers = {};
+  const allNames = [];
+  
+  blocks.forEach(b => {
+    let name = b.name;
+    const polyNames = b.polys.map(p => p.layer).filter(l => /[一-鿿]/.test(l));
+    if (polyNames.length > 0) name = polyNames[0];
+    allNames.push(name);
+    
+    const qtyM = /\*(\d+)/.exec(name);
+    const qty = qtyM ? parseInt(qtyM[1]) : 1;
+    totalQty += qty;
+    
+    b.polys.forEach(p => {
+      const L = polyLength(p.verts, p.closed, p.bulges) / 10;
+      layers[p.layer] = (layers[p.layer] || 0) + L;
+      if (p.layer === "1") totalOuter += L;
+      if (p.layer === "8") totalInner += L;
+    });
+  });
+  
+  // 识别服装类型
+  const nameText = allNames.join(" ");
+  let garmentType = "unknown";
+  if (/裤|腰|浪|裆|脚口|裤袢|马王|袋布|拉链牌/.test(nameText)) garmentType = "pants";
+  else if (/袖|领|肩|门襟|挂面|袖笼|袖口|下摆袢/.test(nameText)) garmentType = "jacket";
+  else if (/裙|裙摆/.test(nameText)) garmentType = "skirt";
+  
+  return {
+    blockCount: blocks.length,
+    totalOuter: totalOuter,
+    totalInner: totalInner,
+    totalQty: totalQty,
+    layerCount: Object.keys(layers).length,
+    garmentType: garmentType,
+    names: allNames
+  };
+}
+
+// 识别历史款式类型
+function getStyleType(style) {
+  const nameText = style.name + " " + style.rows.map(r => r.name).join(" ");
+  if (/裤|腰|浪|裆|脚口|马王|拉链/.test(nameText)) return "pants";
+  if (/袖|领|肩|门襟|挂面|袖笼|下摆/.test(nameText)) return "jacket";
+  return "unknown";
+}
+
+// 推荐相似款式（加入类型匹配） v3
+function recommendStyles(features) {
+  const recommendations = [];
+  console.log("推荐算法版本: v3（类型过滤）");
+  
+  console.log("DXF 特征:", features);
+  
+  const hidden = getHiddenBuiltinStyles();
+  
+  BUILTIN_STYLES.forEach((style, index) => {
+    if (hidden.includes(index)) return; // 跳过隐藏的款式
+    
+    const styleType = getStyleType(style);
+    
+    // 类型不匹配直接跳过（前提是 DXF 类型已识别）
+    if (features.garmentType !== "unknown" && styleType !== "unknown" && styleType !== features.garmentType) {
+      console.log(`款式 ${style.name}(${styleType}): 类型不匹配，跳过`);
+      return;
+    }
+    
+    const styleFeatures = extractStyleFeatures(style);
+    let similarity = calculateSimilarity(features, styleFeatures);
+    
+    // 类型一致的加权提升
+    if (features.garmentType !== "unknown" && styleType === features.garmentType) {
+      similarity = Math.max(similarity, 0.5) + similarity * 0.5;
+    }
+    
+    console.log(`款式 ${style.name}(${styleType}): 相似度 ${(similarity * 100).toFixed(1)}%`);
+    
+    if (similarity > 0.15) {
+      recommendations.push({
+        index: index,
+        name: style.name,
+        similarity: similarity,
+        reason: getRecommendationReason(features, styleFeatures, styleType)
+      });
+    }
+  });
+  
+  recommendations.sort((a, b) => b.similarity - a.similarity);
+  console.log("推荐结果:", recommendations);
+  return recommendations.slice(0, 3);
+}
+
+// 提取款式特征
+function extractStyleFeatures(style) {
+  let totalLen = 0;
+  let totalQty = 0;
+  const stitches = {};
+  
+  style.rows.forEach(r => {
+    totalLen += r.len * r.qty;
+    totalQty += r.qty;
+    stitches[r.stitch] = (stitches[r.stitch] || 0) + 1;
+  });
+  
+  return {
+    rowCount: style.rows.length,
+    totalLen: totalLen,
+    totalQty: totalQty,
+    stitchTypes: Object.keys(stitches).length,
+    mainStitch: Object.keys(stitches).reduce((a, b) => stitches[a] > stitches[b] ? a : b)
+  };
+}
+
+// 计算相似度
+function calculateSimilarity(f1, f2) {
+  // 基于多个特征的加权相似度
+  const countSim = 1 - Math.abs(f1.blockCount - f2.rowCount) / Math.max(f1.blockCount, f2.rowCount);
+  const lenSim = 1 - Math.abs(f1.totalOuter - f2.totalLen / 10) / Math.max(f1.totalOuter, f2.totalLen / 10);
+  const qtySim = 1 - Math.abs(f1.totalQty - f2.totalQty) / Math.max(f1.totalQty, f2.totalQty);
+  
+  // 加权平均
+  return (countSim * 0.3 + lenSim * 0.5 + qtySim * 0.2);
+}
+
+// 获取推荐理由
+function getRecommendationReason(dxf, style) {
+  const reasons = [];
+  
+  if (Math.abs(dxf.blockCount - style.rowCount) <= 5) {
+    reasons.push("裁片/工序数量接近");
+  }
+  
+  const lenRatio = dxf.totalOuter / (style.totalLen / 10);
+  if (lenRatio > 0.7 && lenRatio < 1.3) {
+    reasons.push("总长度相近");
+  }
+  
+  if (dxf.totalQty === style.totalQty) {
+    reasons.push("裁片数量一致");
+  }
+  
+  return reasons.join("、") || "综合特征相似";
+}
+
+// 显示推荐款式
+function showRecommendations(recommendations) {
+  const panel = $("#smartPanel");
+  if (!panel) return;
+  
+  let html = '';
+  recommendations.forEach(rec => {
+    html += `<div class="recommendation">
+      <div class="recommendation-name">${rec.name} (${(rec.similarity * 100).toFixed(0)}%)</div>
+      <div class="recommendation-reason">${rec.reason}</div>
+      <div class="recommendation-actions">
+        <button onclick="showStyleOps(${rec.index})">查看工序明细</button>
+      </div>
+    </div>`;
+  });
+  
+  $("#recommendations").innerHTML = html;
+  panel.style.display = "block";
+}
+
+// 基于 DXF 裁片数据智能生成工序（几何分析版片，生成工艺部位）
+function generateOpsFromDxf(blocks) {
+  rows = [];
+  
+  // 解析每个裁片：名称 + 数量标注 + 外轮廓多边形
+  const pieces = [];
+  blocks.forEach(b => {
+    let name = b.name;
+    const polyNames = b.polys.map(p => p.layer).filter(l => /[一-鿿]/.test(l));
+    if (polyNames.length > 0) name = polyNames[0];
+    // 提取数量标注（如 前片*2芯*1.0 → 数量2），0 表示未标注
+    const qtyM = /\*(\d+)(?:芯|\.\d|$)/.exec(name);
+    const qty = qtyM ? parseInt(qtyM[1]) : 0;
+    name = name.replace(/\*.*$/, "").trim(); // 去掉 *2芯*1.0 后缀
+
+    // 外轮廓（layer 1），保留凸度用于弧长计算
+    let outer = null;
+    b.polys.forEach(p => {
+      if (p.layer === "1" && (!outer || p.verts.length > outer.verts.length)) outer = p;
+    });
+    if (outer) pieces.push({ name, verts: outer.verts, bulges: outer.bulges, closed: outer.closed, qty });
+  });
+  
+  // 几何分析：计算多边形各边长度（含弧段）
+  function edges(p) {
+    const list = [];
+    const v = p.verts, b = p.bulges || [];
+    const n = v.length;
+    const segCount = (p.closed === 1 || p.closed === "1") ? n : n - 1;
+    for (let i = 0; i < segCount; i++) {
+      const j = (i + 1) % n;
+      list.push(segLength(v[i], v[j], b[i]) / 10); // cm
+    }
+    return list;
+  }
+  function perim(p) {
+    return polyLength(p.verts, p.closed, p.bulges) / 10;
+  }
+  
+  // 分类裁片
+  const fronts = pieces.filter(p => /前/.test(p.name) && !/袋|垫|唇/.test(p.name)); // 左前/右前裤片
+  const backs = pieces.filter(p => /后片|后/.test(p.name) && !/袋|垫|唇/.test(p.name));
+  const waist = pieces.filter(p => /腰/.test(p.name));
+  const fly = pieces.filter(p => /门禁|门襟|里襟|fly/i.test(p.name));
+  const pockets = pieces.filter(p => /袋/.test(p.name));
+  const loops = pieces.filter(p => /马王|裤袢|袢/.test(p.name));
+  const coinPockets = pieces.filter(p => /币袋|表袋|coin/i.test(p.name));
+  const patches = pieces.filter(p => /皮牌|牌仔|皮标|label/i.test(p.name));
+
+  // ===== 服装常识知识库：版片未标注数量时的行业标准默认值 =====
+  // 有标注按标注，无标注按常识；牛仔裤/长裤标准配置自动补齐
+  const COMMON = {
+    beltLoopQty: 5,        // 马王袢/裤袢：牛仔裤标准 5 个
+    beltLoopStrip: 45,     // 无袢裁片时，一条袢带长度估算 45cm
+    tackPerLoop: 3,        // 钉一个裤袢的缝线长度约 3cm
+    coinPocketLen: 25,     // 币袋袋口约 25cm（右前袋内小袋）
+    patchPerim: 30,        // 皮牌约 7×8cm，车缝周长约 30cm
+    tackQty: 6,            // 前袋口/门襟打枣点位：袋口×4 + 门襟×2
+    tackPerBackPocket: 2,  // 后袋每个口袋 2 个套结
+    bartackPerLoop: 2,     // 每个马王袢 2 个套结
+  };
+  const others = pieces.filter(p => !fronts.includes(p) && !backs.includes(p) && !waist.includes(p) && !fly.includes(p) && !pockets.includes(p) && !loops.includes(p));
+  
+  const isPants = fronts.length > 0 && backs.length > 0 && waist.length > 0;
+  
+  if (isPants) {
+    // ===== 裤子标准工艺，长度来自版片几何 =====
+    // 前片：最长两条边 = 侧缝、内缝；次短水平边 = 脚口；凹弧 ≈ 前浪
+    fronts.forEach(p => {
+      const es = edges(p).sort((a, b) => b - a);
+      p.sideLen = es[0] || 0;      // 最长边 ≈ 侧缝
+      p.inseamLen = es[1] || 0;    // 次长边 ≈ 内缝
+      p.perimLen = perim(p);
+      // 前浪 ≈ 剩余部分的 1/3（估算），脚口同理
+      p.restLen = Math.max(0, p.perimLen - p.sideLen - p.inseamLen);
+    });
+    backs.forEach(p => {
+      const es = edges(p).sort((a, b) => b - a);
+      p.sideLen = es[0] || 0;
+      p.inseamLen = es[1] || 0;
+      p.perimLen = perim(p);
+      p.restLen = Math.max(0, p.perimLen - p.sideLen - p.inseamLen);
+    });
+    
+    const avgFrontSide = fronts.reduce((a, p) => a + p.sideLen, 0) / fronts.length;
+    const avgFrontInseam = fronts.reduce((a, p) => a + p.inseamLen, 0) / fronts.length;
+    const avgBackRest = backs.reduce((a, p) => a + p.restLen, 0) / backs.length;
+    const avgFrontRest = fronts.reduce((a, p) => a + p.restLen, 0) / fronts.length;
+    // 前浪≈前片凹弧，后浪≈后片凹弧（后浪更长）
+    const frontCrotch = Math.max(20, avgFrontRest * 0.45);
+    const backCrotch = Math.max(30, avgBackRest * 0.55);
+    // 脚口 ≈ 前片底边
+    const hemLen = Math.max(30, avgFrontRest * 0.3);
+    
+    // 线迹类型按工序名称自动匹配（合缝→五线包缝、后浪→双针埋夹、打枣→套结…）
+    const add = (name, len, qty) => {
+      const stitch = autoStitch(name);
+      rows.push({ id: nextId++, name, stitch, len: Math.round(len * 10) / 10, qty, ratio: defaultRatio(stitch) });
+    };
+    
+    add("合侧缝（五线包缝）", avgFrontSide, 2);
+    add("合内缝/下裆（五线包缝）", avgFrontInseam, 2);
+    add("合前浪", frontCrotch, 1);
+    add("合后浪", backCrotch, 1);
+    
+    // 腰头（有标注数量按标注）
+    waist.forEach(p => add("上腰头", perim(p), p.qty || 1));
+
+    // 门襟/里襟 → 装拉链
+    if (fly.length > 0) {
+      const flyLen = perim(fly[0]) * 0.6;
+      add("装拉链/门襟", Math.max(15, flyLen), 1);
+    }
+
+    // 口袋（有标注数量按标注，无标注默认左右一对）
+    const frontPockets = pockets.filter(p => /前/.test(p.name));
+    const backPockets = pockets.filter(p => /后/.test(p.name));
+    if (frontPockets.length > 0) add("前袋口", Math.max(15, perim(frontPockets[0]) * 0.4), frontPockets[0].qty || 2);
+    if (backPockets.length > 0) add("后袋（双开线）", Math.max(13, perim(backPockets[0]) * 0.5), backPockets[0].qty || 2);
+
+    // 币袋：版片有则实测，无则按常识补（牛仔裤右前袋内标准配置）
+    if (coinPockets.length > 0) {
+      add("装币袋", perim(coinPockets[0]) * 0.5, coinPockets[0].qty || 1);
+    } else {
+      add("装币袋（常识补）", COMMON.coinPocketLen, 1);
+    }
+
+    // 皮牌：版片有则实测，无则按常识补（牛仔裤后腰标准配置）
+    if (patches.length > 0) {
+      add("车皮牌", perim(patches[0]), patches[0].qty || 1);
+    } else {
+      add("车皮牌（常识补）", COMMON.patchPerim, 1);
+    }
+
+    // 马王袢/裤袢：有裁片用实测长度，数量优先标注、无标注默认5个（牛仔裤标准）
+    const loopQty = (loops.length > 0 && loops[0].qty) ? loops[0].qty : COMMON.beltLoopQty;
+    const loopStrip = loops.length > 0 ? perim(loops[0]) : COMMON.beltLoopStrip;
+    add("做裤袢", loopStrip, 1);
+    add("钉裤袢", COMMON.tackPerLoop, loopQty);
+
+    // 脚口
+    add("卷脚口", hemLen, 2);
+
+    // 固定点位工序（套结按部位细分：前袋口/门襟 6 个 + 后袋 4 个 + 马王袢 10 个）
+    const backPocketQty = backPockets.length > 0 ? (backPockets[0].qty || 2) : 2;
+    add("套结（前袋口/门襟）", 0, COMMON.tackQty);
+    add("套结（后袋）", 0, backPocketQty * COMMON.tackPerBackPocket);
+    add("套结（马王袢）", 0, loopQty * COMMON.bartackPerLoop);
+    add("锁眼", 0, 1);
+    add("钉扣", 0, 1);
+    
+  } else {
+    // 非裤子：按裁片逐个生成（外轮廓长度，线迹按裁片名推断）
+    pieces.forEach(p => {
+      const stitch = autoStitch(p.name);
+      rows.push({
+        id: nextId++, name: p.name, stitch,
+        len: Math.round(perim(p) * 10) / 10, qty: 1, ratio: defaultRatio(stitch)
+      });
+    });
+  }
+  
+  renderRows();
+  recalc();
+  save();
+}
+
+// 显示历史款式工序明细（右侧参考面板，不覆盖左侧新款式工序）
+// source: "b"=内置款式, "u"=用户款式库
+function showStyleOps(index, source) {
+  source = source || "b";
+  let s;
+  if (source === "b") {
+    s = BUILTIN_STYLES[index];
+  } else {
+    try {
+      const styles = JSON.parse(localStorage.getItem("threadCalcStyles") || "[]");
+      s = styles[index];
+    } catch (e) { return; }
+  }
+  if (!s) return;
+
+  const keyPrefix = source + index; // 已添加标记前缀，区分内置/用户款式
+
+  // 计算该历史款式的线量（净用量 + 含损耗）
+  const net = (s.rows || []).reduce((sum, r) => {
+    const st = STITCHES[r.stitch];
+    if (!st) return sum;
+    return sum + (st.kind === "point" ? r.ratio * r.qty : r.len * r.qty * r.ratio / 100);
+  }, 0);
+  const loss = (s.loss || s.lossRate || 8) / 100;
+  const shrink = (s.shrink || s.shrinkRate || 0) / 100;
+  const withLoss = net * (1 + shrink) * (1 + loss);
+
+  const list = $("#styleOpsList");
+  let html = `<h4 style="margin:0 0 4px;font-size:13px;color:var(--brand-dark)">${s.name}（共 ${s.rows.length} 道工序）</h4>
+  <div style="margin:0 0 12px;font-size:12px;color:var(--muted)">计算线量：净用 <strong style="color:var(--brand-dark)">${net.toFixed(2)}</strong> m/件，含损耗约 <strong style="color:var(--brand-dark)">${withLoss.toFixed(2)}</strong> m/件${s.actual ? `<br>实际用量：<strong style="color:#c0392b">${s.actual.toFixed(2)}</strong> m/件（偏差 ${((net - s.actual) / s.actual * 100).toFixed(1)}%）` : ''}</div>`;
+
+  // 已添加的排前面，用颜色区分
+  const sortedOps = [...s.rows].sort((a, b) => {
+    const aAdded = addedStyleOps.has(keyPrefix + "_" + a.id);
+    const bAdded = addedStyleOps.has(keyPrefix + "_" + b.id);
+    if (aAdded && !bAdded) return -1;
+    if (!aAdded && bAdded) return 1;
+    return 0;
+  });
+
+  sortedOps.forEach(r => {
+    const st = STITCHES[r.stitch];
+    const isPoint = st.kind === "point";
+    const subtotal = isPoint ? r.ratio * r.qty : r.len * r.qty * r.ratio / 100;
+    const isAdded = addedStyleOps.has(keyPrefix + "_" + r.id);
+
+    html += `<div class="style-op-item ${isAdded ? 'added' : ''}" data-id="${r.id}">
+      <div class="op-name">${r.name}</div>
+      <div class="op-detail">${st.name} × ${r.qty}${isPoint ? " 个" : ` × ${r.len}cm`} = ${subtotal.toFixed(2)}m</div>
+      <div class="op-actions">
+        ${isAdded
+          ? '<span class="added-badge">已添加</span>'
+          : `<button onclick="addStyleOp(${index}, ${r.id}, '${source}')">添加到新款式</button>`
+        }
+      </div>
+    </div>`;
+  });
+
+  list.innerHTML = html;
+}
+
+// 添加历史款式工序到新款式
+function addStyleOp(styleIndex, opId, source) {
+  source = source || "b";
+  let s;
+  if (source === "b") {
+    s = BUILTIN_STYLES[styleIndex];
+  } else {
+    try {
+      const styles = JSON.parse(localStorage.getItem("threadCalcStyles") || "[]");
+      s = styles[styleIndex];
+    } catch (e) { return; }
+  }
+  if (!s) return;
+  const op = s.rows.find(r => r.id === opId);
+  if (!op) return;
+
+  const key = source + styleIndex + "_" + opId;
+  if (addedStyleOps.has(key)) return; // 已添加过
+
+  // 插入到最上方（记录来源 key，删除时用于同步移除「已添加」标识）
+  const r = Object.assign({ id: nextId++, name: "", stitch: "301", len: 50, qty: 1, ratio: defaultRatio("301") }, {
+    name: op.name,
+    stitch: op.stitch,
+    len: op.len,
+    qty: op.qty,
+    ratio: op.ratio,
+    fromStyle: key
+  });
+  rows.unshift(r);
+  addedStyleOps.add(key);
+
+  renderRows();
+  recalc();
+  save();
+
+  // 刷新右侧显示
+  showStyleOps(styleIndex, source);
+}
+
+// 初始化历史款式列表
+function loadStyleList() {
+  const select = $("#styleSelect");
+  select.innerHTML = '<option value="">历史款式</option>';
+  
+  const hidden = getHiddenBuiltinStyles();
+  
+  BUILTIN_STYLES.forEach((s, i) => {
+    if (hidden.includes(i)) return; // 跳过隐藏的款式
+    const opt = document.createElement("option");
+    opt.value = "b" + i;
+    opt.textContent = "[内置] " + s.name;
+    select.appendChild(opt);
+  });
+  
+  // 加载用户保存的款式
+  const saved = localStorage.getItem("threadCalcStyles");
+  if (saved) {
+    try {
+      const styles = JSON.parse(saved);
+      styles.forEach((s, i) => {
+        const opt = document.createElement("option");
+        opt.value = "u" + i;
+        opt.textContent = s.name;
+        select.appendChild(opt);
+      });
+    } catch (e) {}
+  }
+}
+
+// 保存款式
+function saveStyle() {
+  const name = $("#styleNo").value || "未命名款式";
+  const styles = JSON.parse(localStorage.getItem("threadCalcStyles") || "[]");
+  styles.push({
+    name: name,
+    rows: rows,
+    thickness: $("#thickness").value,
+    lossRate: $("#lossRate").value,
+    shrinkRate: $("#shrinkRate").value,
+    orderQty: $("#orderQty").value,
+    coneLen: $("#coneLen").value
+  });
+  localStorage.setItem("threadCalcStyles", JSON.stringify(styles));
+  loadStyleList();
+  alert("款式已保存：" + name);
+}
+
+// 系数管理
+function openStitchDb() {
+  const div = $("#stitchDbTable");
+  let html = '<table style="width:100%;font-size:12px"><tr><th>线迹</th><th>薄料</th><th>中厚</th><th>厚料</th><th>点位定额</th><th>Coats参考</th></tr>';
+  
+  Object.keys(STITCHES).forEach(k => {
+    const st = STITCHES[k];
+    const coats = (st.coats === null || st.coats === undefined) ? "—" : st.coats.toFixed(1);
+    if (st.kind === "point") {
+      html += `<tr><td>${st.name}</td><td colspan="3">点位定额</td><td><input type="number" value="${st.perUnit}" data-k="${k}" data-f="perUnit" step="0.1"></td><td class="coats-col">${coats}</td></tr>`;
+    } else {
+      html += `<tr><td>${st.name}</td><td><input type="number" value="${st.ratios.thin}" data-k="${k}" data-f="thin" step="0.1"></td><td><input type="number" value="${st.ratios.mid}" data-k="${k}" data-f="mid" step="0.1"></td><td><input type="number" value="${st.ratios.thick}" data-k="${k}" data-f="thick" step="0.1"></td><td>-</td><td class="coats-col">${coats}</td></tr>`;
+    }
+  });
+  
+  html += '</table>';
+  div.innerHTML = html;
+  $("#stitchModal").style.display = "flex";
+}
+
+function saveStitchDb() {
+  const inputs = document.querySelectorAll("#stitchDbTable input");
+  inputs.forEach(input => {
+    const k = input.dataset.k;
+    const f = input.dataset.f;
+    const v = parseFloat(input.value);
+    
+    if (f === "perUnit") {
+      STITCHES[k].perUnit = v;
+    } else {
+      STITCHES[k].ratios[f] = v;
+    }
+  });
+  
+  localStorage.setItem("threadCalcStitches", JSON.stringify(STITCHES));
+
+  // 统一点位定额：把当前工序表中点位类工序的定额同步为新系数（历史款式不受影响）
+  let synced = 0;
+  rows.forEach(r => {
+    const st = STITCHES[r.stitch];
+    if (st && st.kind === "point" && r.ratio !== st.perUnit) {
+      r.ratio = st.perUnit;
+      synced++;
+    }
+  });
+
+  $("#stitchModal").style.display = "none";
+  renderRefTable();
+  renderRows();
+  recalc();
+  save();
+  if (synced > 0) alert(`系数已保存，同步更新了当前表中 ${synced} 处点位工序定额`);
+}
+
+function resetStitchDb() {
+  if (!confirm("恢复默认系数？")) return;
+  localStorage.removeItem("threadCalcStitches");
+  STITCHES = loadStitches();
+  // 恢复默认后同样同步当前表中的点位工序定额
+  rows.forEach(r => {
+    const st = STITCHES[r.stitch];
+    if (st && st.kind === "point") r.ratio = st.perUnit;
+  });
+  openStitchDb();
+  renderRefTable();
+  renderRows();
+  recalc();
+  save();
+}
+
+// ==================== 工序模板 ====================
+function openTemplate() {
+  loadTemplateList();
+  $("#templateModal").style.display = "flex";
+}
+
+function loadTemplateList() {
+  const templates = JSON.parse(localStorage.getItem("threadCalcTemplates") || "[]");
+  const select = $("#templateSelect");
+  select.innerHTML = '<option value="">选择模板</option>';
+  
+  templates.forEach((t, i) => {
+    const opt = document.createElement("option");
+    opt.value = i;
+    opt.textContent = t.name;
+    select.appendChild(opt);
+  });
+  
+  // 显示模板列表
+  const list = $("#templateList");
+  if (templates.length === 0) {
+    list.innerHTML = '<p style="color:var(--muted);font-size:12px">暂无模板，请先保存当前工序为模板</p>';
+  } else {
+    list.innerHTML = templates.map((t, i) => `
+      <div style="padding:8px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <strong>${t.name}</strong>
+          <span style="font-size:11px;color:var(--muted);margin-left:8px">${t.rows.length} 道工序</span>
+        </div>
+        <div style="font-size:11px;color:var(--muted)">${t.date}</div>
+      </div>
+    `).join("");
+  }
+}
+
+function saveAsTemplate() {
+  const name = $("#styleNo").value || "未命名模板";
+  if (rows.length === 0) {
+    alert("当前没有工序，无法保存模板");
+    return;
+  }
+  
+  const templates = JSON.parse(localStorage.getItem("threadCalcTemplates") || "[]");
+  templates.push({
+    name: name,
+    date: new Date().toISOString().slice(0, 10),
+    rows: rows.map(r => ({ name: r.name, stitch: r.stitch, len: r.len, qty: r.qty, ratio: r.ratio }))
+  });
+  localStorage.setItem("threadCalcTemplates", JSON.stringify(templates));
+  
+  loadTemplateList();
+  alert(`已保存模板：${name}（${rows.length} 道工序）`);
+}
+
+function applyTemplate() {
+  const idx = parseInt($("#templateSelect").value);
+  if (isNaN(idx)) {
+    alert("请选择模板");
+    return;
+  }
+  
+  const templates = JSON.parse(localStorage.getItem("threadCalcTemplates") || "[]");
+  const t = templates[idx];
+  if (!t) return;
+  
+  if (rows.length > 0 && !confirm(`应用模板将覆盖当前 ${rows.length} 道工序，继续？`)) {
+    return;
+  }
+  
+  rows = t.rows.map(r => ({ ...r, id: nextId++ }));
+  renderRows();
+  recalc();
+  save();
+  
+  $("#templateModal").style.display = "none";
+  alert(`已应用模板：${t.name}（${rows.length} 道工序）`);
+}
+
+function deleteTemplate() {
+  const idx = parseInt($("#templateSelect").value);
+  if (isNaN(idx)) {
+    alert("请选择要删除的模板");
+    return;
+  }
+  
+  if (!confirm("确定删除该模板？")) return;
+  
+  const templates = JSON.parse(localStorage.getItem("threadCalcTemplates") || "[]");
+  templates.splice(idx, 1);
+  localStorage.setItem("threadCalcTemplates", JSON.stringify(templates));
+  
+  loadTemplateList();
+  $("#templateSelect").value = "";
+}
+
+// ==================== 款式库管理 ====================
+function openStylesManage() {
+  renderStylesManageList();
+  $("#stylesManageModal").style.display = "flex";
+}
+
+function getHiddenBuiltinStyles() {
+  return JSON.parse(localStorage.getItem("threadCalcHiddenBuiltin") || "[]");
+}
+
+function renderStylesManageList() {
+  const list = $("#stylesManageList");
+  const hidden = getHiddenBuiltinStyles();
+  const saved = JSON.parse(localStorage.getItem("threadCalcStyles") || "[]");
+  const kw = ($("#styleSearch") ? $("#styleSearch").value : "").trim().toLowerCase();
+  const match = name => !kw || (name || "").toLowerCase().includes(kw);
+
+  // 每款计算线量（净用）与实测偏差
+  const summary = s => {
+    const net = styleNet(s);
+    const loss = (s.loss || s.lossRate || 8) / 100;
+    const shrink = (s.shrink || s.shrinkRate || 0) / 100;
+    const calc = net * (1 + shrink) * (1 + loss);
+    let extra = `<span style="font-size:11px;color:var(--muted);white-space:nowrap;flex-shrink:0">计算 ${calc.toFixed(1)} m</span>`;
+    if (s.actual) {
+      const dev = (calc - s.actual) / s.actual * 100;
+      const color = Math.abs(dev) <= 5 ? "var(--brand-dark)" : "#c0392b";
+      extra += `<span style="font-size:11px;color:${color};white-space:nowrap;flex-shrink:0">实测 ${s.actual} m（偏差 ${dev >= 0 ? "+" : ""}${dev.toFixed(1)}%）</span>`;
+    }
+    return extra;
+  };
+
+  let html = "";
+
+  // 内置款式
+  html += '<h4 style="margin:10px 0 6px;font-size:13px;font-weight:600">内置款式</h4>';
+  let builtinShown = 0;
+  BUILTIN_STYLES.forEach((s, i) => {
+    if (!match(s.name)) return;
+    builtinShown++;
+    const isHidden = hidden.includes(i);
+    html += `<div style="padding:10px 8px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px;${isHidden?'opacity:0.5':''}">
+      <input type="checkbox" class="style-export-check" data-key="b${i}" style="margin:0;flex-shrink:0">
+      <div style="flex:1;min-width:0;display:flex;align-items:center;gap:8px;white-space:nowrap;overflow:hidden">
+        <strong style="overflow:hidden;text-overflow:ellipsis">${s.name}</strong>
+        <span style="font-size:11px;color:var(--muted);white-space:nowrap;flex-shrink:0">${s.rows.length} 道工序</span>
+        ${summary(s)}
+      </div>
+      <button class="btn-ghost" style="font-size:12px;padding:3px 10px;flex-shrink:0;border-radius:4px" onclick="toggleBuiltinStyle(${i})">${isHidden ? '显示' : '删除'}</button>
+    </div>`;
+  });
+  if (builtinShown === 0) html += '<p style="color:var(--muted);font-size:12px">无匹配的内置款式</p>';
+
+  // 用户保存的款式
+  html += '<h4 style="margin:14px 0 6px;font-size:13px;font-weight:600">自定义款式</h4>';
+  const savedIdx = saved.map((s, i) => i).filter(i => match(saved[i].name));
+  if (savedIdx.length === 0) {
+    html += `<p style="color:var(--muted);font-size:12px">${saved.length === 0 ? "暂无自定义款式" : "无匹配的自定义款式"}</p>`;
+  } else {
+    savedIdx.forEach(i => {
+      const s = saved[i];
+      html += `<div style="padding:10px 8px;border-bottom:1px solid var(--line);display:flex;align-items:flex-start;gap:10px">
+        <input type="checkbox" class="style-export-check" data-key="u${i}" style="margin:4px 0 0;flex-shrink:0">
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:8px;white-space:nowrap;overflow:hidden">
+            <strong style="overflow:hidden;text-overflow:ellipsis">${s.name}</strong>
+            <span style="font-size:11px;color:var(--muted);white-space:nowrap;flex-shrink:0">${s.rows.length} 道工序</span>
+            ${summary(s)}
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;margin-top:6px;font-size:12px;color:var(--muted)">
+            <span>实测用量</span>
+            <input type="number" class="style-actual" data-idx="${i}" value="${s.actual || ""}" placeholder="未录入" min="0" step="0.01" style="width:90px;padding:3px 6px;font-size:12px">
+            <span>m/件</span>
+          </div>
+        </div>
+        <div style="display:flex;gap:6px;flex-shrink:0">
+          <button class="btn-ghost" style="font-size:12px;padding:3px 10px;border-radius:4px" onclick="renameSavedStyle(${i})">改名</button>
+          <button class="btn-ghost btn-danger" style="font-size:12px;padding:3px 10px;border-radius:4px" onclick="deleteSavedStyle(${i})">删除</button>
+        </div>
+      </div>`;
+    });
+  }
+  
+  list.innerHTML = html;
+}
+
+// 款式净用线量（不含损耗）
+function styleNet(s){
+  return (s.rows || []).reduce((sum, r) => {
+    const st = STITCHES[r.stitch];
+    if (!st) return sum;
+    return sum + (st.kind === "point" ? r.ratio * r.qty : r.len * r.qty * r.ratio / 100);
+  }, 0);
+}
+
+function toggleBuiltinStyle(index) {
+  const hidden = getHiddenBuiltinStyles();
+  const idx = hidden.indexOf(index);
+  if (idx >= 0) {
+    hidden.splice(idx, 1);
+  } else {
+    hidden.push(index);
+  }
+  localStorage.setItem("threadCalcHiddenBuiltin", JSON.stringify(hidden));
+  renderStylesManageList();
+  loadStyleList(); // 刷新历史款式下拉框
+}
+
+function deleteSavedStyle(index) {
+  if (!confirm("确定删除该款式？")) return;
+  const saved = JSON.parse(localStorage.getItem("threadCalcStyles") || "[]");
+  saved.splice(index, 1);
+  localStorage.setItem("threadCalcStyles", JSON.stringify(saved));
+  renderStylesManageList();
+  loadStyleList();
+}
+
+function renameSavedStyle(index) {
+  const saved = JSON.parse(localStorage.getItem("threadCalcStyles") || "[]");
+  if (!saved[index]) return;
+  const name = prompt("修改款式名称：", saved[index].name);
+  if (name === null) return;
+  const trimmed = name.trim();
+  if (!trimmed) return;
+  saved[index].name = trimmed;
+  localStorage.setItem("threadCalcStyles", JSON.stringify(saved));
+  renderStylesManageList();
+  loadStyleList();
+}
+
+function addCurrentToLibrary() {
+  const name = $("#styleNo").value || "未命名款式";
+  if (rows.length === 0) {
+    alert("当前没有工序，无法加入款式库");
+    return;
+  }
+
+  const saved = JSON.parse(localStorage.getItem("threadCalcStyles") || "[]");
+  saved.push({
+    name: name,
+    rows: rows.map(r => ({ ...r })),
+    thickness: $("#thickness").value,
+    loss: parseFloat($("#lossRate").value) || 8,
+    shrink: parseFloat($("#shrinkRate").value) || 0,
+    date: new Date().toISOString().slice(0, 10)
+  });
+  localStorage.setItem("threadCalcStyles", JSON.stringify(saved));
+
+  renderStylesManageList();
+  loadStyleList();
+  alert(`已加入款式库：${name}（${rows.length} 道工序）`);
+}
+
+// 导出选中款式为 JSON（供 AI 学习训练）
+function exportSelectedStyles() {
+  const checked = document.querySelectorAll(".style-export-check:checked");
+  if (checked.length === 0) {
+    alert("请先勾选要导出的款式");
+    return;
+  }
+
+  const saved = JSON.parse(localStorage.getItem("threadCalcStyles") || "[]");
+  const exportData = {
+    exportDate: new Date().toISOString().slice(0, 10),
+    version: "threadCalc-v2",
+    styles: []
+  };
+
+  checked.forEach(cb => {
+    const key = cb.dataset.key;
+    let s = null;
+    if (key.startsWith("b")) {
+      s = BUILTIN_STYLES[parseInt(key.slice(1))];
+    } else if (key.startsWith("u")) {
+      s = saved[parseInt(key.slice(1))];
+    }
+    if (!s) return;
+
+    // 清洗数据：去掉前端临时字段（fromStyle 等），保留训练所需字段
+    const cleanRows = (s.rows || []).map(r => ({
+      name: r.name,
+      stitch: r.stitch,
+      stitchName: STITCHES[r.stitch] ? STITCHES[r.stitch].name : r.stitch,
+      len: r.len,
+      qty: r.qty,
+      ratio: r.ratio,
+      kind: STITCHES[r.stitch] ? STITCHES[r.stitch].kind : "seam",
+      subtotalMeters: STITCHES[r.stitch] && STITCHES[r.stitch].kind === "point"
+        ? r.ratio * r.qty
+        : r.len * r.qty * r.ratio / 100
+    }));
+
+    exportData.styles.push({
+      name: s.name,
+      thickness: s.thickness || "mid",
+      loss: s.loss || s.lossRate || 8,
+      rowCount: cleanRows.length,
+      totalMeters: Math.round(cleanRows.reduce((sum, r) => sum + r.subtotalMeters, 0) * 100) / 100,
+      actualMeters: s.actual || null,
+      rows: cleanRows
+    });
+  });
+
+  const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: "application/json;charset=utf-8" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "styles-export-" + new Date().toISOString().slice(0, 10) + ".json";
+  a.click();
+  URL.revokeObjectURL(a.href);
+
+  alert(`已导出 ${exportData.styles.length} 个款式`);
+}
+
+function renderRefTable(){
+  const tb = $("#refBody");
+  tb.innerHTML = Object.keys(STITCHES).map(k => {
+    const st = STITCHES[k];
+    const coats = (st.coats === null || st.coats === undefined) ? "—" : st.coats.toFixed(1);
+    if (st.kind === "point") {
+      return `<tr><td>${st.name}</td><td>${st.use}</td><td colspan="3">点位定额 ${st.perUnit} m/个</td><td>—</td></tr>`;
+    }
+    return `<tr><td>${st.name}</td><td>${st.use}</td><td>${st.ratios.thin}</td><td>${st.ratios.mid}</td><td>${st.ratios.thick}</td><td class="coats-col">${coats}</td></tr>`;
+  }).join("");
+}
+
+// 事件监听
+$("#opBody").addEventListener("input", e => {
+  const tr = e.target.closest("tr");
+  if (!tr) return;
+  const id = parseInt(tr.dataset.id);
+  const r = rows.find(x => x.id === id);
+  if (!r) return;
+  
+  const f = e.target.dataset.f;
+  if (f === "name") r.name = e.target.value;
+  if (f === "stitch") {
+    r.stitch = e.target.value;
+    r.ratio = defaultRatio(r.stitch);
+    renderRows();
+  }
+  if (f === "len") r.len = parseFloat(e.target.value) || 0;
+  if (f === "qty") r.qty = parseFloat(e.target.value) || 0;
+  if (f === "ratio") r.ratio = parseFloat(e.target.value) || 0;
+  
+  recalc(); save();
+});
+
+$("#opBody").addEventListener("click", e => {
+  const tr = e.target.closest("tr");
+  if (!tr) return;
+  const id = parseInt(tr.dataset.id);
+  
+  if (e.target.classList.contains("row-del")) {
+    const removed = rows.find(x => x.id === id);
+    rows = rows.filter(x => x.id !== id);
+    // 如果删除的是从历史款式添加的工序，同步移除「已添加」标识
+    if (removed && removed.fromStyle) {
+      addedStyleOps.delete(removed.fromStyle);
+      // 解析 source 和 styleIndex 以刷新右侧面板
+      const parts = /^([bu])(\d+)_(.+)$/.exec(removed.fromStyle);
+      if (parts) {
+        showStyleOps(parseInt(parts[2]), parts[1]);
+      }
+    }
+    renderRows(); recalc(); save();
+  } else if (e.target.classList.contains("row-add")) {
+    addRow({}, id);
+  } else if (e.target.classList.contains("row-dup")) {
+    duplicateRow(id);
+  } else if (e.target.classList.contains("row-up")) {
+    moveRow(id, -1);
+  } else if (e.target.classList.contains("row-down")) {
+    moveRow(id, 1);
+  }
+});
+
+// 复制一行到其下方（不继承历史款式来源标记，避免误连动）
+function duplicateRow(id){
+  const idx = rows.findIndex(r => r.id === id);
+  if (idx < 0) return;
+  const copy = Object.assign({}, rows[idx], { id: nextId++ });
+  delete copy.fromStyle;
+  rows.splice(idx + 1, 0, copy);
+  renderRows(); recalc(); save();
+}
+
+// 上移 / 下移工序
+function moveRow(id, dir){
+  const idx = rows.findIndex(r => r.id === id);
+  const target = idx + dir;
+  if (idx < 0 || target < 0 || target >= rows.length) return;
+  const tmp = rows[idx];
+  rows[idx] = rows[target];
+  rows[target] = tmp;
+  renderRows(); recalc(); save();
+}
+
+$("#importDxf").addEventListener("click", () => $("#dxfFile").click());
+$("#dxfFile").addEventListener("change", e => {
+  if (e.target.files.length) importDXF(e.target.files[0]);
+  e.target.value = "";
+});
+$("#btnStitchDb").addEventListener("click", openStitchDb);
+$("#btnSaveStyle").addEventListener("click", saveStyle);
+$("#btnSaveStitches").addEventListener("click", saveStitchDb);
+$("#btnResetStitches").addEventListener("click", resetStitchDb);
+
+// 工序模板
+$("#btnTemplate").addEventListener("click", openTemplate);
+$("#btnSaveAsTemplate").addEventListener("click", saveAsTemplate);
+$("#btnApplyTemplate").addEventListener("click", applyTemplate);
+$("#btnDeleteTemplate").addEventListener("click", deleteTemplate);
+$("#btnCloseTemplate").addEventListener("click", () => $("#templateModal").style.display = "none");
+
+// 款式库管理
+$("#btnManageStyles").addEventListener("click", openStylesManage);
+$("#btnBackup").addEventListener("click", backupAll);
+$("#btnRestore").addEventListener("click", () => $("#backupFile").click());
+$("#backupFile").addEventListener("change", e => {
+  const f = e.target.files[0];
+  if (f) restoreAll(f);
+  e.target.value = "";
+});
+$("#btnCloseStylesManage").addEventListener("click", () => $("#stylesManageModal").style.display = "none");
+$("#btnAddToLibrary").addEventListener("click", addCurrentToLibrary);
+$("#btnExportStyles").addEventListener("click", exportSelectedStyles);
+$("#styleCheckAll").addEventListener("change", e => {
+  document.querySelectorAll(".style-export-check").forEach(cb => cb.checked = e.target.checked);
+});
+$("#styleSearch").addEventListener("input", renderStylesManageList);
+
+// 录入 / 修改自定义款式的实测用量
+$("#stylesManageList").addEventListener("change", e => {
+  if (!e.target.classList.contains("style-actual")) return;
+  const idx = parseInt(e.target.dataset.idx);
+  const saved = JSON.parse(localStorage.getItem("threadCalcStyles") || "[]");
+  if (!saved[idx]) return;
+  const v = parseFloat(e.target.value);
+  if (isFinite(v) && v > 0) {
+    saved[idx].actual = Math.round(v * 100) / 100;
+  } else {
+    delete saved[idx].actual;
+  }
+  localStorage.setItem("threadCalcStyles", JSON.stringify(saved));
+  renderStylesManageList();
+  loadStyleList();
+});
+
+$("#styleSelect").addEventListener("change", e => {
+  const v = e.target.value;
+  if (v === "") return;
+  // 只加载到右侧历史款式参考面板，不覆盖左侧新款式工序
+  if (v.startsWith("b")) {
+    showStyleOps(parseInt(v.slice(1)), "b");
+  } else if (v.startsWith("u")) {
+    showStyleOps(parseInt(v.slice(1)), "u");
+  }
+  e.target.value = ""; // 复位下拉框，允许重复选择同一款式
+});
+// ==================== 全量数据备份与恢复 ====================
+const BACKUP_KEYS = {
+  threadCalcV1: "当前工序与参数",
+  threadCalcStyles: "款式库",
+  threadCalcStitches: "耗线系数",
+  threadCalcTemplates: "工序模板",
+  threadCalcHiddenBuiltin: "内置款式显示状态"
+};
+
+function backupAll() {
+  save(); // 先把当前状态落盘，保证备份是最新的
+  const data = { app: "threadCalc", version: "v2", date: new Date().toISOString(), data: {} };
+  Object.keys(BACKUP_KEYS).forEach(k => {
+    const v = localStorage.getItem(k);
+    if (v !== null) {
+      try { data.data[k] = JSON.parse(v); } catch (e) { data.data[k] = v; }
+    }
+  });
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json;charset=utf-8" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "线耗数据备份-" + new Date().toISOString().slice(0, 10) + ".json";
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function restoreAll(file) {
+  const reader = new FileReader();
+  reader.onload = () => {
+    let obj;
+    try { obj = JSON.parse(reader.result); } catch (e) { alert("备份文件格式错误，无法解析"); return; }
+    if (!obj || !obj.data) { alert("不是有效的备份文件"); return; }
+    const keys = Object.keys(obj.data).filter(k => BACKUP_KEYS[k]);
+    if (keys.length === 0) { alert("备份文件中没有可恢复的数据"); return; }
+    const lines = keys.map(k => {
+      const v = obj.data[k];
+      const size = Array.isArray(v) ? v.length + " 条" : "1 项";
+      return "· " + BACKUP_KEYS[k] + "：" + size;
+    });
+    if (!confirm("将恢复以下数据并覆盖当前内容：\n\n" + lines.join("\n") + "\n\n恢复后页面会自动刷新，是否继续？")) return;
+    keys.forEach(k => localStorage.setItem(k, JSON.stringify(obj.data[k])));
+    location.reload();
+  };
+  reader.readAsText(file, "utf-8");
+}
+
+$("#clearAll").addEventListener("click", () => {
+  if (!confirm("清空全部工序和设置？")) return;
+  rows = []; $("#styleNo").value = "";
+  addedStyleOps.clear();
+  localStorage.removeItem("threadCalcV1");
+  renderRows(); recalc();
+});
+$("#thickness").addEventListener("change", () => {
+  rows.forEach(r => { r.ratio = defaultRatio(r.stitch); });
+  renderRows(); recalc(); save();
+});
+["lossRate", "shrinkRate", "orderQty", "coneLen", "styleNo"].forEach(id =>
+  $("#" + id).addEventListener("input", () => { recalc(); save(); }));
+
+$("#exportCsv").addEventListener("click", () => {
+  const lossRate = Math.max(0, parseFloat($("#lossRate").value) || 0) / 100;
+  const shrinkRate = Math.max(0, parseFloat($("#shrinkRate").value) || 0) / 100;
+  const lines = [];
+  lines.push(`款号,${$("#styleNo").value || "-"}`);
+  lines.push("部位/工序,线迹类型,缝迹长度cm,数量,耗线比或单点定额,用线量m");
+  rows.forEach(r => {
+    const st = STITCHES[r.stitch];
+    const len = st.kind === "seam" ? r.len : "";
+    lines.push([r.name, st.name, len, r.qty, r.ratio, rowMeters(r).toFixed(2)].join(","));
+  });
+  const net = rows.reduce((s, r) => s + rowMeters(r), 0);
+  const shrunk = net * (1 + shrinkRate);
+  const per = shrunk * (1 + lossRate);
+  lines.push(`理论净用量m,${net.toFixed(2)}`);
+  lines.push(`面料缩率%,${(shrinkRate * 100).toFixed(1)}`);
+  lines.push(`缩率补偿量m,${(shrunk - net).toFixed(2)}`);
+  lines.push(`损耗率%,${(lossRate * 100).toFixed(1)}`);
+  lines.push(`损耗余量m,${(per - shrunk).toFixed(2)}`);
+  lines.push(`单件含缩率损耗m,${per.toFixed(2)}`);
+  lines.push(`订单数量件,${$("#orderQty").value}`);
+  lines.push(`订单总用线m,${(per * (parseFloat($("#orderQty").value) || 0)).toFixed(0)}`);
+  const blob = new Blob(["\ufeff" + lines.join("\r\n")], { type: "text/csv;charset=utf-8" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = ($("#styleNo").value || "线耗明细") + ".csv";
+  a.click();
+  URL.revokeObjectURL(a.href);
+});
+
+// ==================== 版本更新检测 ====================
+function verParts(v) {
+  return String(v || "").replace(/^v/i, "").split(".").map(x => parseInt(x, 10) || 0);
+}
+
+function isNewerVersion(latest, current) {
+  const a = verParts(latest), b = verParts(current);
+  const n = Math.max(a.length, b.length);
+  for (let i = 0; i < n; i++) {
+    const x = a[i] || 0, y = b[i] || 0;
+    if (x > y) return true;
+    if (x < y) return false;
+  }
+  return false;
+}
+
+let updateChecking = false;
+
+function showUpdateModal(rel) {
+  const tag = rel.tag_name || "";
+  $("#updateModal").dataset.tag = tag;
+  const exeAsset = (rel.assets || []).find(a => /\.exe$/i.test(a.name)) || null;
+  $("#updateTitle").textContent = "发现新版本 " + tag;
+  $("#updateMeta").textContent = "当前版本 v" + APP_VERSION + "  →  最新版本 " + tag;
+  $("#updateNotes").textContent = (rel.body || "本次更新暂无详细说明。").trim();
+  const dl = $("#btnDownloadUpdate");
+  if (exeAsset) {
+    dl.dataset.url = exeAsset.browser_download_url;
+    dl.dataset.name = exeAsset.name;
+    dl.style.display = "";
+    dl.disabled = false;
+    dl.textContent = "下载最新版本";
+  } else {
+    dl.dataset.url = "";
+    dl.style.display = "none";
+  }
+  $("#updatePageLink").href = rel.html_url || GH_RELEASE_PAGE;
+  $("#updateWebLink").href = GH_PAGES_URL;
+  $("#updateModal").style.display = "flex";
+}
+
+async function fetchLatestRelease() {
+  // 主通道：GitHub Release API
+  try {
+    const res = await fetch(GH_RELEASE_API + "?t=" + Date.now(), {
+      headers: { "Accept": "application/vnd.github+json" },
+      cache: "no-store"
+    });
+    if (res.ok) return await res.json();
+  } catch (e) { /* 走备用通道 */ }
+
+  // 备用通道：仓库根目录 version.json（不受 API 限流影响）
+  const res2 = await fetch(GH_VERSION_JSON + "?t=" + Date.now(), { cache: "no-store" });
+  if (!res2.ok) throw new Error("HTTP " + res2.status);
+  const v = await res2.json();
+  const ver = String(v.version || "").replace(/^v/i, "");
+  return {
+    tag_name: "v" + ver,
+    body: v.notes || "",
+    html_url: GH_RELEASE_PAGE,
+    assets: v.exe ? [{ name: v.exe.split("/").pop(), browser_download_url: v.exe }] : []
+  };
+}
+
+async function checkUpdate(manual) {
+  if (updateChecking) return;
+  updateChecking = true;
+  const btn = $("#btnCheckUpdate");
+  if (manual) { btn.disabled = true; btn.textContent = "检查中..."; }
+  try {
+    const rel = await fetchLatestRelease();
+    const latest = rel.tag_name || "";
+    if (!latest) throw new Error("未获取到版本号");
+    if (isNewerVersion(latest, APP_VERSION)) {
+      const skipped = localStorage.getItem("threadCalcSkipVersion");
+      if (!manual && skipped === latest) return; // 用户已跳过该版本
+      showUpdateModal(rel);
+    } else if (manual) {
+      alert("当前已是最新版本（v" + APP_VERSION + "）");
+    }
+  } catch (e) {
+    if (manual) alert("检查更新失败：" + e.message + "\n\n请确认网络能访问 GitHub，或手动打开：\n" + GH_RELEASE_PAGE);
+  } finally {
+    updateChecking = false;
+    if (manual) { btn.disabled = false; btn.textContent = "检查更新"; }
+  }
+}
+
+$("#btnCheckUpdate").addEventListener("click", () => checkUpdate(true));
+$("#btnCloseUpdate").addEventListener("click", () => { $("#updateModal").style.display = "none"; });
+$("#btnSkipUpdate").addEventListener("click", () => {
+  const tag = $("#updateModal").dataset.tag;
+  if (tag) localStorage.setItem("threadCalcSkipVersion", tag);
+  $("#updateModal").style.display = "none";
+});
+$("#btnDownloadUpdate").addEventListener("click", async () => {
+  const btn = $("#btnDownloadUpdate");
+  const url = btn.dataset.url;
+  if (!url) return;
+  const filename = btn.dataset.name || "线耗计算器-新版本.exe";
+  btn.disabled = true;
+  btn.textContent = "正在下载...";
+  try {
+    // EXE 内运行时通过 pywebview 接口下载到「下载」文件夹
+    if (window.pywebview && window.pywebview.api && window.pywebview.api.download_update) {
+      const r = await window.pywebview.api.download_update(url, filename);
+      if (r && r.ok) {
+        alert("新版已下载到：\n" + r.path + "\n\n请关闭本程序，用新文件替换旧的 EXE 后重新打开。");
+        $("#updateModal").style.display = "none";
+      } else {
+        alert("下载失败：" + ((r && r.error) || "未知错误"));
+      }
+    } else {
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      $("#updateModal").style.display = "none";
+    }
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "下载最新版本";
+  }
+});
+
+$("#appVer").textContent = "v" + APP_VERSION;
+// 每次打开自动检测新版本（延迟执行，避免影响首屏）
+setTimeout(() => checkUpdate(false), 1500);
+
+// 初始化
+STITCHES = loadStitches(); // 载入已保存的自定义系数
+loadStyleList();
+renderRefTable();
+if (!loadState()) { /* 初始为空，由用户导入 DXF 或选择历史款式 */ }
+</script>
+</body>
+</html>
