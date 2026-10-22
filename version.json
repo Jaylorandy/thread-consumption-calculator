@@ -1,0 +1,5 @@
+{
+  "version": "2.1.0",
+  "notes": "首个线上版本：\n- 新增面料缩率参数（默认 5%）\n- 系数管理中点位定额保存后同步当前工序表\n- 新增数据备份与恢复\n- 新增自动/手动版本更新检测（按钮位于页面右上角）",
+  "exe": "https://github.com/Jaylorandy/thread-consumption-calculator/releases/download/v2.1.0/ThreadCalculator-v2.1.0.exe"
+}
