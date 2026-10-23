@@ -28,6 +28,18 @@ input:focus,select:focus{outline:2px solid var(--brand-soft);border-color:var(--
 .btn-ghost{background:#fff;color:var(--text);border:1px solid var(--line)}
 .btn-ghost:hover{background:#f3f4f6}
 .btn-danger{color:var(--danger)}
+/* AI 渐变按钮：品牌紫蓝渐变 + 白字，用于突出 AI 相关入口 */
+.btn-ai{background:linear-gradient(135deg,#5b6cff 0%,#8b5cf6 55%,#a855f7 100%);color:#fff;border:none;
+  box-shadow:0 2px 8px rgba(91,108,255,.28);font-weight:500}
+.btn-ai:hover{background:linear-gradient(135deg,#4553e8 0%,#7c3aed 55%,#9333ea 100%);
+  box-shadow:0 4px 14px rgba(91,108,255,.38);transform:translateY(-1px)}
+.btn-ai:active{transform:translateY(0);box-shadow:0 2px 8px rgba(91,108,255,.28)}
+.btn-ai-exp{background:linear-gradient(135deg,#8b5cf6 0%,#a855f7 100%);color:#fff;border:none;
+  box-shadow:0 2px 8px rgba(139,92,246,.26);font-weight:500}
+.btn-ai-exp:hover{background:linear-gradient(135deg,#7c3aed 0%,#9333ea 100%);
+  box-shadow:0 4px 14px rgba(139,92,246,.34);transform:translateY(-1px)}
+.btn-ai:active,.btn-ai-exp:active{transform:translateY(0)}
+.btn-ai:focus-visible,.btn-ai-exp:focus-visible{outline:2px solid #8b5cf6;outline-offset:2px}
 table{width:100%;border-collapse:collapse}
 th,td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:middle}
 th{font-size:12px;color:var(--muted);font-weight:500;white-space:nowrap}
@@ -42,6 +54,26 @@ td.subtotal{font-variant-numeric:tabular-nums;font-weight:600;white-space:nowrap
 .row-add{color:var(--brand)}
 .row-up,.row-down,.row-dup{color:var(--muted)}
 .row-up:hover,.row-down:hover,.row-dup:hover{color:var(--brand-dark)}
+/* AI 校准 */
+.ai-sev-high{color:#d93025;font-weight:500}
+.ai-sev-medium{color:#b26a00;font-weight:500}
+.ai-sev-low{color:var(--muted)}
+.ai-diag{border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin-bottom:8px;background:#fff}
+.ai-diag.applied{border-color:var(--brand);background:var(--brand-soft)}
+.ai-diag-head{display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap}
+.ai-diag-target{font-weight:500}
+.ai-diag-body{font-size:13px;color:var(--text)}
+.ai-diag-reason{font-size:12px;color:var(--muted);margin-top:4px}
+.ai-exp-item{border:1px solid var(--line);border-radius:8px;padding:9px 11px;margin-bottom:7px;background:#fff;font-size:12px}
+.ai-exp-item .row1{display:flex;align-items:center;gap:8px;margin-bottom:3px;flex-wrap:wrap}
+.ai-badge{font-size:11px;padding:1px 7px;border-radius:10px;background:rgba(0,0,0,.06);color:var(--muted);white-space:nowrap}
+.ai-badge.type{background:var(--brand-soft);color:var(--brand-dark)}
+.ai-kv{color:var(--muted)}
+.ai-kv b{color:var(--text);font-weight:500}
+.ai-hint{font-size:12px;color:var(--muted);margin:6px 0 0}
+.ai-loading{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)}
+.ai-dot{width:7px;height:7px;border-radius:50%;background:var(--brand);animation:aiPulse 1s ease-in-out infinite}
+@keyframes aiPulse{0%,100%{opacity:.25}50%{opacity:1}}
 .result-wrap{display:grid;grid-template-columns:220px 1fr;gap:20px;align-items:start}
 @media(max-width:760px){.result-wrap{grid-template-columns:1fr}}
 .big-num{font-size:34px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--brand-dark);line-height:1.2}
@@ -121,6 +153,8 @@ footer{max-width:1400px;margin:0 auto;padding:0 20px 32px;color:var(--muted);fon
       </div>
       <div class="field"><label>损耗率 %（线头/断线/换梭）</label><input id="lossRate" type="number" value="8" min="0" step="0.5"></div>
       <div class="field"><label>面料缩率 %（水洗/热缩补偿）</label><input id="shrinkRate" type="number" value="5" min="0" step="0.5"></div>
+      <div class="field"><label>缝份扣减 cm（毛线→净线，DXF 导入时生效）</label><input id="seamAllowance" type="number" value="1.0" min="0" step="0.1"></div>
+      <div class="field"><label>工艺附加 %（里布/双股/装饰线等未建模工序）</label><input id="extraRate" type="number" value="25" min="0" step="5"></div>
       <div class="field"><label>订单数量（件）</label><input id="orderQty" type="number" value="1000" min="0" step="1"></div>
       <div class="field"><label>线卷长度（m/卷）</label><input id="coneLen" type="number" value="5000" min="1" step="100"></div>
     </div>
@@ -128,7 +162,6 @@ footer{max-width:1400px;margin:0 auto;padding:0 20px 32px;color:var(--muted);fon
       <button class="btn" id="importDxf">导入 DXF 纸样</button>
       <input type="file" id="dxfFile" accept=".dxf" style="display:none">
       <button class="btn-ghost" id="btnStitchDb">系数管理</button>
-      <button class="btn-ghost" id="btnSaveStyle">保存款式</button>
       <button class="btn-ghost" id="btnTemplate">工序模板</button>
       <button class="btn-ghost" id="btnManageStyles">款式库管理</button>
       <button class="btn-ghost" id="btnBackup">备份数据</button>
@@ -161,8 +194,10 @@ footer{max-width:1400px;margin:0 auto;padding:0 20px 32px;color:var(--muted);fon
         <div class="kv"><span>损耗余量</span><span id="lossM">0.00 m</span></div>
         <div class="kv"><span>订单总用线量</span><span id="orderTotal">0 m</span></div>
         <div class="kv"><span>采购量（按线卷换算）</span><span id="cones">0 卷</span></div>
-        <div class="toolbar">
+        <div class="toolbar" style="align-items:center;gap:8px">
           <button class="btn" id="exportCsv">导出明细 CSV</button>
+          <button class="btn-ai" id="btnAI" title="用 AI 校准当前工序数据（需要导入 DXF 纸样）">AI 校准</button>
+          <button class="btn-ai-exp" id="btnAIExp" title="管理 AI 踩坑经验库">经验库</button>
         </div>
       </div>
     </div>
@@ -279,9 +314,84 @@ footer{max-width:1400px;margin:0 auto;padding:0 20px 32px;color:var(--muted);fon
   </div>
 </div>
 
+<!-- AI 校准模态框 -->
+<div id="aiModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:1200;align-items:center;justify-content:center">
+  <div style="background:var(--bg);padding:24px;border-radius:10px;width:820px;max-width:94vw;max-height:88vh;overflow:auto">
+    <h3 style="margin:0 0 4px">AI 校准分析</h3>
+    <p class="ai-hint" style="margin:0 0 14px">
+      AI 只做工艺语义判断与异常诊断，几何计算由本地代码完成。所有数值修改都需你确认后才会生效。
+    </p>
+
+    <!-- 配置区 -->
+    <div id="aiConfigBox" style="padding:12px 14px;background:#fff;border:1px solid var(--line);border-radius:8px;margin-bottom:14px">
+      <div style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+        <div style="flex:1;min-width:220px">
+          <label class="ai-kv" style="font-size:12px">API Key（智谱 bigmodel.cn）</label>
+          <input id="aiApiKey" type="password" placeholder="粘贴你的 API Key，仅保存在本机">
+        </div>
+        <div style="width:180px">
+          <label class="ai-kv" style="font-size:12px">常规校准模型</label>
+          <select id="aiModel" title="仅用于「开始 AI 校准」按钮；「深度分析」固定用 GLM-4.6">
+            <option value="GLM-4-Flash">GLM-4-Flash（免费·日常）</option>
+            <option value="GLM-4.6">GLM-4.6（深度·新问题）</option>
+            <option value="GLM-4-Air">GLM-4-Air</option>
+            <option value="GLM-4-Plus">GLM-4-Plus</option>
+          </select>
+        </div>
+        <button class="btn-ghost" id="btnAiSaveCfg">保存配置</button>
+        <button class="btn-ghost" id="btnAiTest">测试连接</button>
+        <button class="btn-ghost" id="btnAiCheck">环境自检</button>
+      </div>
+      <p class="ai-hint">Key 只写入本机浏览器存储，不上传任何服务器。若在公开环境使用，建议自建中转服务。<br>
+        <b>模型说明</b>：「开始 AI 校准」使用上方下拉框选定的模型；「深度分析」固定用 GLM-4.6（不受下拉框影响）。</p>
+    </div>
+
+    <!-- 操作区 -->
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
+      <button class="btn" id="btnAiRun">开始 AI 校准</button>
+      <button class="btn-ghost" id="btnAiRunDeep" title="固定使用 GLM-4.6 深度推理，不受上方模型下拉框影响；适合新问题、疑难诊断">深度分析（固定 GLM-4.6）</button>
+      <span id="aiStatus" class="ai-loading" style="display:none"><span class="ai-dot"></span><span id="aiStatusText">分析中…</span></span>
+    </div>
+
+    <div id="aiSummary" style="margin-bottom:12px"></div>
+    <div id="aiResult"></div>
+
+    <div style="margin-top:16px;text-align:right;display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn-ghost" id="btnAiExportExp">导出经验库</button>
+      <button class="btn-ghost" id="btnCloseAi">关闭</button>
+    </div>
+  </div>
+</div>
+
+<!-- 经验库模态框 -->
+<div id="aiExpModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:1200;align-items:center;justify-content:center">
+  <div style="background:var(--bg);padding:24px;border-radius:10px;width:860px;max-width:94vw;max-height:88vh;overflow:auto">
+    <h3 style="margin:0 0 4px">踩坑经验库</h3>
+    <p class="ai-hint" style="margin:0 0 12px">
+      按「品类 + 问题类型」双维度组织。AI 校准时只注入相关条目，避免上下文膨胀与经验漂移。
+    </p>
+
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
+      <select id="aiExpFilterCat" style="width:130px"></select>
+      <select id="aiExpFilterType" style="width:150px"></select>
+      <input id="aiExpSearch" placeholder="搜索症状/原因/解法/特征" style="flex:1;min-width:160px;width:auto">
+      <button class="btn-ghost" id="btnAiExpExport">导出 JSON</button>
+      <button class="btn-ghost" id="btnAiExpImport">导入</button>
+      <input type="file" id="aiExpFile" accept=".json" style="display:none">
+      <button class="btn-ghost btn-danger" id="btnAiExpClear">清空</button>
+    </div>
+
+    <div id="aiExpList"></div>
+
+    <div style="margin-top:16px;text-align:right">
+      <button class="btn-ghost" id="btnCloseAiExp">关闭</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ==================== 版本与更新检测 ====================
-const APP_VERSION = "2.1.0";
+const APP_VERSION = "2.4.0";
 const GH_OWNER = "Jaylorandy";
 const GH_REPO = "thread-consumption-calculator";
 const GH_RELEASE_API = `https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/releases/latest`;
@@ -342,8 +452,11 @@ const $ = s => document.querySelector(s);
 
 function defaultRatio(stitchKey){
   const st = STITCHES[stitchKey];
-  if (st.kind === "point") return st.perUnit;
-  return st.ratios[$("#thickness").value];
+  if (!st) return 0;                       // 未知线迹：不给系数，避免污染计算
+  if (st.kind === "point") return st.perUnit || 0;
+  const th = $("#thickness");
+  const key = (th && th.value) || "mid";   // 厚度档兜底，缺省按中厚
+  return (st.ratios && st.ratios[key] != null) ? st.ratios[key] : (st.ratios && st.ratios.mid) || 0;
 }
 
 // 按工序名称推断线迹类型（服装工艺常识），无法判断时回落到平缝 301
@@ -418,19 +531,22 @@ function rowMeters(r){
 function recalc(){
   const lossRate = Math.max(0, parseFloat($("#lossRate").value) || 0) / 100;
   const shrinkRate = Math.max(0, parseFloat($("#shrinkRate").value) || 0) / 100;
+  const extraRate = Math.max(0, parseFloat($("#extraRate").value) || 0) / 100;
   const net = rows.reduce((s, r) => s + rowMeters(r), 0);
-  const shrunk = net * (1 + shrinkRate);
+  // 工艺附加：里布、双股线、装饰线等未单独建模的工序
+  const withExtra = net * (1 + extraRate);
+  const shrunk = withExtra * (1 + shrinkRate);
   const per = shrunk * (1 + lossRate);
   const orderQty = parseFloat($("#orderQty").value) || 0;
   const coneLen = parseFloat($("#coneLen").value) || 5000;
 
   $("#netPer").textContent = net.toFixed(2) + " m";
   $("#perPiece").innerHTML = per.toFixed(2) + " <small>m</small>";
-  $("#shrinkM").textContent = (shrunk - net).toFixed(2) + " m";
+  $("#shrinkM").textContent = (shrunk - withExtra).toFixed(2) + " m";
   $("#lossM").textContent = (per - shrunk).toFixed(2) + " m";
   $("#orderTotal").textContent = (per * orderQty).toFixed(0) + " m";
   $("#cones").textContent = Math.ceil(per * orderQty / coneLen) + " 卷";
-  
+
   // 按线迹类型汇总
   const byStitch = {};
   rows.forEach(r => {
@@ -447,6 +563,8 @@ function save(){
     thickness: $("#thickness").value,
     lossRate: $("#lossRate").value,
     shrinkRate: $("#shrinkRate").value,
+    seamAllowance: $("#seamAllowance").value,
+    extraRate: $("#extraRate").value,
     orderQty: $("#orderQty").value,
     coneLen: $("#coneLen").value,
     rows: rows,
@@ -464,6 +582,8 @@ function loadState(){
     $("#thickness").value = s.thickness || "mid";
     $("#lossRate").value = s.lossRate || 8;
     $("#shrinkRate").value = (s.shrinkRate !== undefined && s.shrinkRate !== "" ? s.shrinkRate : 5);
+    $("#seamAllowance").value = (s.seamAllowance !== undefined && s.seamAllowance !== "" ? s.seamAllowance : 1.0);
+    $("#extraRate").value = (s.extraRate !== undefined && s.extraRate !== "" ? s.extraRate : 25);
     $("#orderQty").value = s.orderQty || 1000;
     $("#coneLen").value = s.coneLen || 5000;
     rows = s.rows || [];
@@ -586,6 +706,75 @@ function segLength(p1, p2, bulge) {
   return r * theta;
 }
 
+// 角度差（0~180）
+function angDiff(a, b) {
+  let d = Math.abs(a - b) % 360;
+  if (d > 180) d = 360 - d;
+  return d;
+}
+
+// 缝段提取：把 CAD 离散化的轮廓边，按"方向一致且轮廓上连续"归并为缝段
+// 背景：ET 导出的曲线离散密度不固定（同一镜像件可能 9 段或 28 段），
+// 直接取"最长单条边"只会拿到长边的一半；必须先归并。
+function seamRuns(p, tolDeg) {
+  tolDeg = tolDeg || 15;
+  const v = p.verts, b = p.bulges || [];
+  const n = v.length;
+  const closed = p.closed === 1 || p.closed === "1";
+  const segCount = closed ? n : n - 1;
+  if (segCount < 2) return [];
+
+  // 边列表（带方向）
+  const edges = [];
+  for (let i = 0; i < segCount; i++) {
+    const j = (i + 1) % n;
+    const dx = v[j][0] - v[i][0], dy = v[j][1] - v[i][1];
+    edges.push({
+      i,
+      len: segLength(v[i], v[j], b[i]) / 10, // cm
+      ang: (Math.atan2(dy, dx) * 180 / Math.PI + 360) % 360,
+      v0: v[i], v1: v[j]
+    });
+  }
+  const m = edges.length;
+
+  // 环起点：取最大转角处，保证首尾不跨断点
+  let cut = 0, maxTurn = -1;
+  for (let i = 0; i < m; i++) {
+    const t = angDiff(edges[(i + 1) % m].ang, edges[i].ang);
+    if (t > maxTurn) { maxTurn = t; cut = (i + 1) % m; }
+  }
+  const ord = [];
+  for (let k = 0; k < m; k++) ord.push(edges[(cut + k) % m]);
+
+  // 分组：与"组内首边"夹角在容差内即归入该组
+  const groups = [];
+  let g = { anchor: ord[0].ang, idx: [0] };
+  for (let i = 1; i < m; i++) {
+    if (angDiff(ord[i].ang, g.anchor) <= tolDeg) g.idx.push(i);
+    else { groups.push(g); g = { anchor: ord[i].ang, idx: [i] }; }
+  }
+  groups.push(g);
+
+  return groups.map(gr => {
+    let len = 0, sx = 0, sy = 0;
+    gr.idx.forEach(k => {
+      len += ord[k].len;
+      const a = ord[k].ang * Math.PI / 180;
+      sx += Math.cos(a) * ord[k].len;
+      sy += Math.sin(a) * ord[k].len;
+    });
+    const first = ord[gr.idx[0]], last = ord[gr.idx[gr.idx.length - 1]];
+    return {
+      len,
+      ang: (Math.atan2(sy, sx) * 180 / Math.PI + 360) % 360,
+      start: [first.v0[0] / 10, first.v0[1] / 10],
+      end: [last.v1[0] / 10, last.v1[1] / 10],
+      segCount: gr.idx.length
+    };
+  }).sort((x, y) => y.len - x.len);
+}
+
 function polyLength(verts, closed, bulges) {
   if (!verts || verts.length < 2) return 0;
   const n = verts.length;
@@ -633,8 +822,8 @@ function importDXF(file) {
       // 自动把款号/款名更新为 DXF 文件名（去掉扩展名）
       $("#styleNo").value = file.name.replace(/\.[^.]+$/, "");
       
-      // 生成参考数据表格，不直接生成工序（避免前后片公共边重复计算）
-      let html = '<table style="width:100%;font-size:12px"><tr><th>裁片</th><th>数量</th><th>外轮廓(cm)</th><th>内部线(cm)</th></tr>';
+      // 生成参考数据表格：周长 / 归并后的最长缝段 / 内部线
+      let html = '<table style="width:100%;font-size:12px"><tr><th>裁片</th><th>数量</th><th>外轮廓周长(cm)</th><th>最长缝段(cm)</th><th>次长缝段(cm)</th></tr>';
       blocks.forEach(b => {
         // 从 polys 中提取中文名称
         let name = b.name;
@@ -650,13 +839,30 @@ function importDXF(file) {
           layerLens[p.layer] = (layerLens[p.layer] || 0) + L;
         });
         const outer = (layerLens["1"] || 0).toFixed(1);
-        const inner = (layerLens["8"] || 0).toFixed(1);
-        html += `<tr><td>${name}</td><td>${qty}</td><td>${outer}</td><td>${inner}</td></tr>`;
+
+        // 归并缝段：CAD 离散化后同一条缝会被切成多条边，必须归并才是真实缝长
+        let longest = "-", second = "-";
+        const l1polys = b.polys.filter(p => p.layer === "1");
+        if (l1polys.length) {
+          const outerPoly = l1polys.sort((a, b2) => b2.verts.length - a.verts.length)[0];
+          const runs = seamRuns(outerPoly);
+          if (runs.length) {
+            longest = runs[0].len.toFixed(1);
+            // 次长：与最长段方向相反（对缝的另一条边）
+            let s2 = 0;
+            for (let i = 1; i < runs.length; i++) {
+              if (angDiff(runs[i].ang, runs[0].ang) > 120 && runs[i].len > s2) s2 = runs[i].len;
+            }
+            if (!s2 && runs[1]) s2 = runs[1].len;
+            second = s2 ? s2.toFixed(1) : "-";
+          }
+        }
+        html += `<tr><td>${name}</td><td>${qty}</td><td>${outer}</td><td><strong>${longest}</strong></td><td>${second}</td></tr>`;
       });
       html += '</table>';
-      
+
       const panel = document.getElementById("dxfPanel") || createDxfPanel();
-      panel.innerHTML = '<h3 style="margin:0 0 8px;font-size:13px">DXF 参考数据（请把长度填入左侧对应工序）</h3>' + html;
+      panel.innerHTML = '<h3 style="margin:0 0 8px;font-size:13px">DXF 参考数据（毛线口径，工序已按缝份扣减为净线）</h3>' + html;
       
       // 添加长度校准工具
       panel.innerHTML += `
@@ -685,11 +891,16 @@ function importDXF(file) {
       
       // 基于 DXF 实际测量数据智能生成新工序
       generateOpsFromDxf(blocks);
-      
+
+      // 把本次 DXF 上下文交给 AI 校准模块（供后续"AI 校准"使用）
+      if (typeof AIUI !== "undefined") {
+        try { AIUI.setContext(blocks, dxfFeatures); } catch (e) { /* AI 模块可选，失败不影响主流程 */ }
+      }
+
       // 恢复按钮状态
       btn.textContent = originalText;
       btn.disabled = false;
-      
+
       alert("导入成功！共解析 " + blocks.length + " 个裁片");
     } catch (err) {
       alert("导入失败：" + err.message);
@@ -735,42 +946,51 @@ function applyCalibration() {
 
 // 提取 DXF 特征
 function extractDxfFeatures(blocks) {
-  let totalOuter = 0;
-  let totalInner = 0;
+  let totalOuter = 0;   // 裁片周长合计（未乘数量）
+  let totalInner = 0;   // 内部线（layer 8）合计
   let totalQty = 0;
+  let seamEstimate = 0; // 单件总缝长估算（cm），与历史款式 totalLen 同量纲
   const layers = {};
   const allNames = [];
-  
+
   blocks.forEach(b => {
     let name = b.name;
     const polyNames = b.polys.map(p => p.layer).filter(l => /[一-鿿]/.test(l));
     if (polyNames.length > 0) name = polyNames[0];
     allNames.push(name);
-    
+
     const qtyM = /\*(\d+)/.exec(name);
     const qty = qtyM ? parseInt(qtyM[1]) : 1;
     totalQty += qty;
-    
+
+    // 单片周长（layer 1 = 裁剪边界）
+    let perim = 0;
     b.polys.forEach(p => {
       const L = polyLength(p.verts, p.closed, p.bulges) / 10;
       layers[p.layer] = (layers[p.layer] || 0) + L;
-      if (p.layer === "1") totalOuter += L;
+      if (p.layer === "1") { totalOuter += L; perim += L; }
       if (p.layer === "8") totalInner += L;
     });
+    // 单件总缝长估算：
+    //   一条缝合线在前后两个裁片上各出现一次 → 累加时每条缝被数了 2 次（÷2）
+    //   周长里还含腰口/脚口/贴边等不缝或另计的边 → 再取一半（÷2）
+    //   最终 ÷4，与历史款式的 totalLen（工序缝长×数量）保持同量纲。
+    seamEstimate += (perim / 4) * qty;
   });
-  
+
   // 识别服装类型
   const nameText = allNames.join(" ");
   let garmentType = "unknown";
   if (/裤|腰|浪|裆|脚口|裤袢|马王|袋布|拉链牌/.test(nameText)) garmentType = "pants";
   else if (/袖|领|肩|门襟|挂面|袖笼|袖口|下摆袢/.test(nameText)) garmentType = "jacket";
   else if (/裙|裙摆/.test(nameText)) garmentType = "skirt";
-  
+
   return {
     blockCount: blocks.length,
     totalOuter: totalOuter,
     totalInner: totalInner,
     totalQty: totalQty,
+    seamEstimate: seamEstimate,   // 与 totalLen 同量纲，用于相似度比较
     layerCount: Object.keys(layers).length,
     garmentType: garmentType,
     names: allNames
@@ -854,10 +1074,12 @@ function extractStyleFeatures(style) {
 // 计算相似度
 function calculateSimilarity(f1, f2) {
   // 基于多个特征的加权相似度
+  // 注意量纲：f1.seamEstimate 与 f2.totalLen 都是"单件总缝长(cm)"，直接比较
   const countSim = 1 - Math.abs(f1.blockCount - f2.rowCount) / Math.max(f1.blockCount, f2.rowCount);
-  const lenSim = 1 - Math.abs(f1.totalOuter - f2.totalLen / 10) / Math.max(f1.totalOuter, f2.totalLen / 10);
+  const refLen = Math.max(f1.seamEstimate, f2.totalLen, 1);
+  const lenSim = 1 - Math.abs(f1.seamEstimate - f2.totalLen) / refLen;
   const qtySim = 1 - Math.abs(f1.totalQty - f2.totalQty) / Math.max(f1.totalQty, f2.totalQty);
-  
+
   // 加权平均
   return (countSim * 0.3 + lenSim * 0.5 + qtySim * 0.2);
 }
@@ -865,12 +1087,12 @@ function calculateSimilarity(f1, f2) {
 // 获取推荐理由
 function getRecommendationReason(dxf, style) {
   const reasons = [];
-  
+
   if (Math.abs(dxf.blockCount - style.rowCount) <= 5) {
     reasons.push("裁片/工序数量接近");
   }
-  
-  const lenRatio = dxf.totalOuter / (style.totalLen / 10);
+
+  const lenRatio = dxf.seamEstimate / Math.max(style.totalLen, 1);
   if (lenRatio > 0.7 && lenRatio < 1.3) {
     reasons.push("总长度相近");
   }
@@ -969,23 +1191,42 @@ function generateOpsFromDxf(blocks) {
   
   if (isPants) {
     // ===== 裤子标准工艺，长度来自版片几何 =====
-    // 前片：最长两条边 = 侧缝、内缝；次短水平边 = 脚口；凹弧 ≈ 前浪
+    // 侧缝/内缝取"归并后的最长缝段"（seamRuns），不能取最长单条边：
+    // ET 导出时曲线离散密度不固定，直接取最长边只会拿到长边的一半。
+    // 内缝 = 第二长缝段，且与侧缝方向近似相反（一条朝上、一条朝下）。
     fronts.forEach(p => {
-      const es = edges(p).sort((a, b) => b - a);
-      p.sideLen = es[0] || 0;      // 最长边 ≈ 侧缝
-      p.inseamLen = es[1] || 0;    // 次长边 ≈ 内缝
+      const runs = seamRuns(p);
+      p.runs = runs;
       p.perimLen = perim(p);
+      p.sideLen = runs.length ? runs[0].len : 0;      // 最长缝段 ≈ 侧缝
+      // 内缝：找与侧缝夹角 >120° 的最长缝段（对缝的两条边方向相反）
+      let inseam = 0;
+      if (runs.length) {
+        for (let i = 1; i < runs.length; i++) {
+          if (angDiff(runs[i].ang, runs[0].ang) > 120 && runs[i].len > inseam) inseam = runs[i].len;
+        }
+        if (!inseam) inseam = runs[1] ? runs[1].len : 0; // 兜底：次长缝段
+      }
+      p.inseamLen = inseam;
       // 前浪 ≈ 剩余部分的 1/3（估算），脚口同理
       p.restLen = Math.max(0, p.perimLen - p.sideLen - p.inseamLen);
     });
     backs.forEach(p => {
-      const es = edges(p).sort((a, b) => b - a);
-      p.sideLen = es[0] || 0;
-      p.inseamLen = es[1] || 0;
+      const runs = seamRuns(p);
+      p.runs = runs;
       p.perimLen = perim(p);
+      p.sideLen = runs.length ? runs[0].len : 0;
+      let inseam = 0;
+      if (runs.length) {
+        for (let i = 1; i < runs.length; i++) {
+          if (angDiff(runs[i].ang, runs[0].ang) > 120 && runs[i].len > inseam) inseam = runs[i].len;
+        }
+        if (!inseam) inseam = runs[1] ? runs[1].len : 0;
+      }
+      p.inseamLen = inseam;
       p.restLen = Math.max(0, p.perimLen - p.sideLen - p.inseamLen);
     });
-    
+
     const avgFrontSide = fronts.reduce((a, p) => a + p.sideLen, 0) / fronts.length;
     const avgFrontInseam = fronts.reduce((a, p) => a + p.inseamLen, 0) / fronts.length;
     const avgBackRest = backs.reduce((a, p) => a + p.restLen, 0) / backs.length;
@@ -997,18 +1238,36 @@ function generateOpsFromDxf(blocks) {
     const hemLen = Math.max(30, avgFrontRest * 0.3);
     
     // 线迹类型按工序名称自动匹配（合缝→五线包缝、后浪→双针埋夹、打枣→套结…）
-    const add = (name, len, qty) => {
+    // 缝份扣减：DXF 导出的是毛线（含缝份），实际车缝走净线。
+    //   毛线上每片边两端各多出一个缝份，两片对缝时每片各退一端 → 每片边扣 1×缝份。
+    const SA = Math.max(0, parseFloat($("#seamAllowance").value) || 0);
+    const add = (name, len, qty, deductSA) => {
       const stitch = autoStitch(name);
-      rows.push({ id: nextId++, name, stitch, len: Math.round(len * 10) / 10, qty, ratio: defaultRatio(stitch) });
+      let L = len;
+      if (deductSA && SA > 0) L = Math.max(0, L - SA);
+      rows.push({ id: nextId++, name, stitch, len: Math.round(L * 10) / 10, qty, ratio: defaultRatio(stitch) });
     };
-    
-    add("合侧缝（五线包缝）", avgFrontSide, 2);
-    add("合内缝/下裆（五线包缝）", avgFrontInseam, 2);
-    add("合前浪", frontCrotch, 1);
-    add("合后浪", backCrotch, 1);
-    
+
+    add("合侧缝（五线包缝）", avgFrontSide, 2, true);
+    add("合内缝/下裆（五线包缝）", avgFrontInseam, 2, true);
+    add("合前浪", frontCrotch, 1, true);
+    add("合后浪", backCrotch, 1, true);
+
     // 腰头（有标注数量按标注）
-    waist.forEach(p => add("上腰头", perim(p), p.qty || 1));
+    // 弧形腰头（U 形）由许多短弧段组成，单段最长 ≠ 腰头缝长。
+    // 正确算法：腰头与裤身拼合的是 U 形内侧的长弧（沿 U 形延伸），
+    //   该弧 = 裁片周长 − 两端短边（U 形两"腿"口）。
+    //   U 形长弧本身已包含上下两条边（沿弧往返），故不再额外乘系数。
+    waist.forEach(p => {
+      const wRuns = seamRuns(p);
+      let waistLen = perim(p);
+      if (wRuns.length >= 3) {
+        const ends = [wRuns[0].len, wRuns[1].len].sort((a, b) => b - a);
+        const longArc = Math.max(0, waistLen - ends[0] - ends[1]);
+        if (longArc > 10) waistLen = longArc;
+      }
+      add("上腰头", waistLen, p.qty || 1, true);
+    });
 
     // 门襟/里襟 → 装拉链
     if (fly.length > 0) {
@@ -1017,10 +1276,28 @@ function generateOpsFromDxf(blocks) {
     }
 
     // 口袋（有标注数量按标注，无标注默认左右一对）
+    // 袋口长度 = 袋布裁片最长缝段（实测），不用拍脑袋系数
     const frontPockets = pockets.filter(p => /前/.test(p.name));
     const backPockets = pockets.filter(p => /后/.test(p.name));
-    if (frontPockets.length > 0) add("前袋口", Math.max(15, perim(frontPockets[0]) * 0.4), frontPockets[0].qty || 2);
-    if (backPockets.length > 0) add("后袋（双开线）", Math.max(13, perim(backPockets[0]) * 0.5), backPockets[0].qty || 2);
+    // 前袋包含"袋口嵌合"与"袋盖"两道，袋盖是独立裁片
+    const frontPocketRun = (p) => {
+      const r = seamRuns(p);
+      return r.length ? r[0].len : perim(p) * 0.4;
+    };
+    if (frontPockets.length > 0) {
+      const p = frontPockets[0];
+      add("前袋口", Math.max(15, frontPocketRun(p)), p.qty || 2, true);
+    }
+    if (backPockets.length > 0) {
+      const p = backPockets[0];
+      // 后袋双开线：袋口 + 袋盖贴缝
+      add("后袋（双开线）", Math.max(13, frontPocketRun(p) * 1.8), p.qty || 2, true);
+    }
+    // 袋盖（独立裁片则实测，无则按常识）
+    const pocketFlaps = pieces.filter(p => /袋盖|蓋|flap/i.test(p.name));
+    if (pocketFlaps.length > 0) {
+      add("车袋盖", frontPocketRun(pocketFlaps[0]), pocketFlaps[0].qty || 2, true);
+    }
 
     // 币袋：版片有则实测，无则按常识补（牛仔裤右前袋内标准配置）
     if (coinPockets.length > 0) {
@@ -1036,23 +1313,41 @@ function generateOpsFromDxf(blocks) {
       add("车皮牌（常识补）", COMMON.patchPerim, 1);
     }
 
-    // 马王袢/裤袢：有裁片用实测长度，数量优先标注、无标注默认5个（牛仔裤标准）
+    // 马王袢/裤袢：裁片是"连排整条带"（长边 = 全部袢连排的长度），
+    // 做工时每个袢单独翻折并车缝两条长边。
+    //   单袢长 = 带长边 / 袢数；单袢车缝长 = 单袢长 × 2（正反两面）
+    //   总车缝长 = 单袢长 × 2 × 袢数
     const loopQty = (loops.length > 0 && loops[0].qty) ? loops[0].qty : COMMON.beltLoopQty;
-    const loopStrip = loops.length > 0 ? perim(loops[0]) : COMMON.beltLoopStrip;
-    add("做裤袢", loopStrip, 1);
+    let loopStrip;
+    if (loops.length > 0) {
+      const beltRuns = seamRuns(loops[0]);
+      // 连排带：最长缝段 = 带的长边（两条等长，取其一）
+      const longSide = beltRuns.length ? beltRuns[0].len : perim(loops[0]) / 2;
+      const perLoop = longSide / Math.max(loopQty, 1);   // 单个袢的长度
+      loopStrip = Math.max(10, perLoop * 2);             // 每个袢车两条长边
+    } else {
+      loopStrip = COMMON.beltLoopStrip;
+    }
+    add("做裤袢", loopStrip, loopQty, true);
     add("钉裤袢", COMMON.tackPerLoop, loopQty);
 
     // 脚口
     add("卷脚口", hemLen, 2);
 
     // 固定点位工序（套结按部位细分：前袋口/门襟 6 个 + 后袋 4 个 + 马王袢 10 个）
-    const backPocketQty = backPockets.length > 0 ? (backPockets[0].qty || 2) : 2;
+    const backPocketQty = (backPockets.length > 0 && backPockets[0].qty) ? backPockets[0].qty : 2;
     add("套结（前袋口/门襟）", 0, COMMON.tackQty);
     add("套结（后袋）", 0, backPocketQty * COMMON.tackPerBackPocket);
     add("套结（马王袢）", 0, loopQty * COMMON.bartackPerLoop);
     add("锁眼", 0, 1);
     add("钉扣", 0, 1);
-    
+
+    // ===== 杂项缝：省道 / 暗缝 / 贴边 / 拉链贴 / 后腰夹里 等零散车缝 =====
+    // 这些工序没有独立裁片，靠经验比例估算。取"已识别裁片周长之和"的一个比例。
+    // 牛仔裤中这类零散车缝约占主要缝长的 8%~10%。
+    const miscSeam = Math.max(20, (avgFrontSide + avgFrontInseam + avgBackRest) * 0.22);
+    add("省道/暗缝/贴边等杂项", miscSeam, 1, true);
+
   } else {
     // 非裤子：按裁片逐个生成（外轮廓长度，线迹按裁片名推断）
     pieces.forEach(p => {
@@ -1094,11 +1389,13 @@ function showStyleOps(index, source) {
   }, 0);
   const loss = (s.loss || s.lossRate || 8) / 100;
   const shrink = (s.shrink || s.shrinkRate || 0) / 100;
-  const withLoss = net * (1 + shrink) * (1 + loss);
+  const extra = Math.max(0, parseFloat($("#extraRate").value) || 0) / 100;
+  const withExtra = net * (1 + extra);
+  const withLoss = withExtra * (1 + shrink) * (1 + loss);
 
   const list = $("#styleOpsList");
   let html = `<h4 style="margin:0 0 4px;font-size:13px;color:var(--brand-dark)">${s.name}（共 ${s.rows.length} 道工序）</h4>
-  <div style="margin:0 0 12px;font-size:12px;color:var(--muted)">计算线量：净用 <strong style="color:var(--brand-dark)">${net.toFixed(2)}</strong> m/件，含损耗约 <strong style="color:var(--brand-dark)">${withLoss.toFixed(2)}</strong> m/件${s.actual ? `<br>实际用量：<strong style="color:#c0392b">${s.actual.toFixed(2)}</strong> m/件（偏差 ${((net - s.actual) / s.actual * 100).toFixed(1)}%）` : ''}</div>`;
+  <div style="margin:0 0 12px;font-size:12px;color:var(--muted)">计算线量：净用 <strong style="color:var(--brand-dark)">${net.toFixed(2)}</strong> m/件，含损耗约 <strong style="color:var(--brand-dark)">${withLoss.toFixed(2)}</strong> m/件${s.actual ? `<br>实际用量：<strong style="color:#c0392b">${s.actual.toFixed(2)}</strong> m/件（偏差 ${((withLoss - s.actual) / s.actual * 100).toFixed(1)}%）` : ''}</div>`;
 
   // 已添加的排前面，用颜色区分
   const sortedOps = [...s.rows].sort((a, b) => {
@@ -1200,23 +1497,6 @@ function loadStyleList() {
 }
 
 // 保存款式
-function saveStyle() {
-  const name = $("#styleNo").value || "未命名款式";
-  const styles = JSON.parse(localStorage.getItem("threadCalcStyles") || "[]");
-  styles.push({
-    name: name,
-    rows: rows,
-    thickness: $("#thickness").value,
-    lossRate: $("#lossRate").value,
-    shrinkRate: $("#shrinkRate").value,
-    orderQty: $("#orderQty").value,
-    coneLen: $("#coneLen").value
-  });
-  localStorage.setItem("threadCalcStyles", JSON.stringify(styles));
-  loadStyleList();
-  alert("款式已保存：" + name);
-}
-
 // 系数管理
 function openStitchDb() {
   const div = $("#stitchDbTable");
@@ -1685,7 +1965,6 @@ $("#dxfFile").addEventListener("change", e => {
   e.target.value = "";
 });
 $("#btnStitchDb").addEventListener("click", openStitchDb);
-$("#btnSaveStyle").addEventListener("click", saveStyle);
 $("#btnSaveStitches").addEventListener("click", saveStitchDb);
 $("#btnResetStitches").addEventListener("click", resetStitchDb);
 
@@ -1798,12 +2077,13 @@ $("#thickness").addEventListener("change", () => {
   rows.forEach(r => { r.ratio = defaultRatio(r.stitch); });
   renderRows(); recalc(); save();
 });
-["lossRate", "shrinkRate", "orderQty", "coneLen", "styleNo"].forEach(id =>
+["lossRate", "shrinkRate", "orderQty", "coneLen", "styleNo", "extraRate", "seamAllowance"].forEach(id =>
   $("#" + id).addEventListener("input", () => { recalc(); save(); }));
 
 $("#exportCsv").addEventListener("click", () => {
   const lossRate = Math.max(0, parseFloat($("#lossRate").value) || 0) / 100;
   const shrinkRate = Math.max(0, parseFloat($("#shrinkRate").value) || 0) / 100;
+  const extraRate = Math.max(0, parseFloat($("#extraRate").value) || 0) / 100;
   const lines = [];
   lines.push(`款号,${$("#styleNo").value || "-"}`);
   lines.push("部位/工序,线迹类型,缝迹长度cm,数量,耗线比或单点定额,用线量m");
@@ -1813,11 +2093,14 @@ $("#exportCsv").addEventListener("click", () => {
     lines.push([r.name, st.name, len, r.qty, r.ratio, rowMeters(r).toFixed(2)].join(","));
   });
   const net = rows.reduce((s, r) => s + rowMeters(r), 0);
-  const shrunk = net * (1 + shrinkRate);
+  const withExtra = net * (1 + extraRate);
+  const shrunk = withExtra * (1 + shrinkRate);
   const per = shrunk * (1 + lossRate);
   lines.push(`理论净用量m,${net.toFixed(2)}`);
+  lines.push(`工艺附加%,${(extraRate * 100).toFixed(1)}`);
+  lines.push(`工艺附加量m,${(withExtra - net).toFixed(2)}`);
   lines.push(`面料缩率%,${(shrinkRate * 100).toFixed(1)}`);
-  lines.push(`缩率补偿量m,${(shrunk - net).toFixed(2)}`);
+  lines.push(`缩率补偿量m,${(shrunk - withExtra).toFixed(2)}`);
   lines.push(`损耗率%,${(lossRate * 100).toFixed(1)}`);
   lines.push(`损耗余量m,${(per - shrunk).toFixed(2)}`);
   lines.push(`单件含缩率损耗m,${per.toFixed(2)}`);
@@ -1967,6 +2250,1256 @@ STITCHES = loadStitches(); // 载入已保存的自定义系数
 loadStyleList();
 renderRefTable();
 if (!loadState()) { /* 初始为空，由用户导入 DXF 或选择历史款式 */ }
+</script>
+
+<script>
+/* ===== AI 校准模块（内联，保持单文件分发） ===== */
+/* ===== AI 校准模块（内联，保持单文件分发） ===== */
+/* ==========================================================================
+   AI 校准模块 v1.0
+   - 经验库：按「品类 + 问题类型」双维度组织，本地 localStorage 存储
+   - GLM 调用：用户自带 Key（方案 C），只存在本机，不写入代码库
+   - 职责边界：几何计算由本地代码负责，AI 只做工艺语义映射与异常诊断
+   - 所有 AI 给出的数值修正必须经用户确认，且走"长度校准"通道生效
+   ========================================================================== */
+
+const AI = (() => {
+  const LS_CONFIG = "threadCalcAIConfig";
+  const LS_EXP = "threadCalcAIExperience";
+
+  /* ---------- 品类 ---------- */
+  const CATEGORIES = {
+    pants:    { label: "裤装",   keys: ["裤", "腰", "浪", "裆", "脚口", "裤袢", "马王", "牛仔"] },
+    jacket:   { label: "上衣",   keys: ["袖", "领", "肩", "门襟", "挂面", "袖笼", "下摆", "衬衫", "T恤", "卫衣"] },
+    skirt:    { label: "裙装",   keys: ["裙", "裙摆", "开衩"] },
+    dress:    { label: "连衣裙", keys: ["连衣裙", "背心", "吊带"] },
+    outerwear:{ label: "外套",   keys: ["夹克", "风衣", "棉服", "羽绒服", "呢料", "大衣"] },
+    bag:      { label: "箱包",   keys: ["包", "袋", "背", "肩带"] },
+    other:    { label: "其他",   keys: [] }
+  };
+
+  /* ---------- 工艺基准库（部位 → 合理缝长区间） ----------
+     区间来源：本软件内置的 4 款历史款式实测数据（0503 长裤 / 0056 短裤 /
+     784LK 外套 / 0019 夹克），口径为"单道工序的单条缝长（cm）"。
+     用途：给 AI 一个客观参照物，让它能算出"应该改成多少"，
+     而不是只说"比例不匹配"这种无法执行的空话。 */
+  const PART_BENCHMARK = {
+    pants: [
+      { kw: ["侧缝", "外侧缝"], label: "侧缝/外侧缝", min: 95,  max: 125, typ: 110, src: "0503长裤 110cm" },
+      { kw: ["内缝", "内裆", "下裆"], label: "内缝/下裆", min: 65, max: 95,  typ: 80,  src: "长裤合内裆 170cm" },
+      { kw: ["前浪"],            label: "前浪",       min: 25,  max: 45,  typ: 33,  src: "0503长裤 拷前浪散口 33cm" },
+      { kw: ["后浪"],            label: "后浪",       min: 35,  max: 55,  typ: 44,  src: "0503长裤 合后浪 44cm" },
+      { kw: ["封腰头"],          label: "封腰头",     min: 15,  max: 28,  typ: 20,  src: "0503长裤 封腰头 20cm" },
+      { kw: ["拉腰头", "上腰头", "腰头"], label: "腰头",  min: 95, max: 125, typ: 110, src: "0503长裤 拉腰头 110cm" },
+      { kw: ["马王", "腰袢"],    label: "马王袢",     min: 60,  max: 80,  typ: 70,  src: "0503长裤 拉马王袢 70cm" },
+      { kw: ["脚口"],            label: "卷脚口",     min: 40,  max: 55,  typ: 48,  src: "0503长裤 卷脚口 48cm" },
+      { kw: ["前袋", "袋贴布", "前代布"], label: "前袋口", min: 28, max: 38, typ: 33, src: "0503长裤 拷袋贴布 33cm" },
+      { kw: ["后袋"],            label: "后袋",       min: 40,  max: 55,  typ: 48,  src: "0503长裤 贴后袋 48cm" },
+      { kw: ["袋口线"],          label: "后袋口线",   min: 18,  max: 25,  typ: 21,  src: "0503长裤 环口车后袋口线 21cm" },
+      { kw: ["币袋"],            label: "币袋",       min: 10,  max: 15,  typ: 12,  src: "0503长裤 卷币袋 12cm" },
+      { kw: ["皮牌"],            label: "皮牌",       min: 25,  max: 32,  typ: 28,  src: "0503长裤 订皮牌 28cm" },
+      { kw: ["明线", "压线"],    label: "明线",       min: 18,  max: 26,  typ: 22,  src: "0503长裤 压外侧缝明线 22cm" }
+    ],
+    jacket: [
+      { kw: ["肩缝"],            label: "肩缝",       min: 18,  max: 28,  typ: 22,  src: "784LK外套 合肩缝 22cm" },
+      { kw: ["上袖"],            label: "上袖",       min: 65,  max: 85,  typ: 74,  src: "784LK外套 上袖 74cm" },
+      { kw: ["袖笼"],            label: "袖笼",       min: 65,  max: 85,  typ: 74,  src: "784LK外套 压袖笼 74cm" },
+      { kw: ["侧缝"],            label: "侧缝",       min: 60,  max: 80,  typ: 68,  src: "784LK外套 合侧缝 68cm" },
+      { kw: ["领"],              label: "领",         min: 55,  max: 75,  typ: 65,  src: "784LK外套 勾上级领 65cm" },
+      { kw: ["门襟", "门巾"],    label: "门襟",       min: 65,  max: 85,  typ: 73,  src: "784LK外套 门巾 73cm" },
+      { kw: ["下摆"],            label: "下摆",       min: 120, max: 145, typ: 132, src: "784LK外套 压下摆 132cm" },
+      { kw: ["前横"],            label: "前横",       min: 22,  max: 32,  typ: 27,  src: "784LK外套 拷合前横 27cm" },
+      { kw: ["袖口"],            label: "袖口",       min: 25,  max: 35,  typ: 30,  src: "0019夹克 装压袖口 30cm" },
+      { kw: ["袋盖"],            label: "袋盖",       min: 24,  max: 34,  typ: 28,  src: "0019夹克 勾袋盖 28cm" }
+    ],
+    skirt: [
+      { kw: ["腰头", "上腰"],    label: "腰头",       min: 90,  max: 125, typ: 110, src: "参照裤装腰头" },
+      { kw: ["开衩"],            label: "开衩",       min: 12,  max: 30,  typ: 20,  src: "行业常规" }
+    ]
+  };
+
+  /* 品类回退：找不到专属基准时用通用池兜底 */
+  const BENCH_FALLBACK = { pants: "pants", jacket: "jacket", skirt: "skirt", dress: "skirt", outerwear: "jacket" };
+
+  /* 按工序名匹配部位基准区间 */
+  function matchBench(opName, category) {
+    const n = String(opName || "");
+    const cat = BENCH_FALLBACK[category] || category;
+    const pool = PART_BENCHMARK[cat] || PART_BENCHMARK.pants;
+    for (const item of pool) {
+      if (item.kw.some(k => n.indexOf(k) >= 0)) {
+        return { part: item.label, min: item.min, max: item.max, typ: item.typ, src: item.src };
+      }
+    }
+    return null;
+  }
+
+  /* ---------- 问题类型（经验检索的第二维度） ---------- */
+  const ISSUE_TYPES = {
+    naming:      { label: "裁片命名",   desc: "名称错别字、别名、误识别" },
+    seam_length: { label: "缝长识别",   desc: "侧缝/内缝/腰头等缝长取值偏差" },
+    stitch_map:  { label: "线迹映射",   desc: "部位与线迹类型对应错误" },
+    coverage:    { label: "工序遗漏",   desc: "缺少某道工序或部位" },
+    qty:         { label: "数量份数",   desc: "裁片份数、点位数量错误" },
+    geometry:    { label: "几何异常",   desc: "轮廓、图层、坐标系等解析问题" },
+    coeff:       { label: "耗线系数",   desc: "系数取值不合理" }
+  };
+
+  /* ---------- 配置 ---------- */
+  const defaultConfig = () => ({
+    apiKey: "",                 // 用户自填，存在本机 localStorage
+    baseUrl: "https://open.bigmodel.cn/api/paas/v4",
+    model: "GLM-4-Flash",       // 默认用免费的 Flash
+    modelDeep: "GLM-4.6",      // 复杂问题用
+    temperature: 0.2,
+    maxTokens: 3000,
+    autoWriteExperience: false  // 新经验是否自动入库（默认需人工确认）
+  });
+
+  function loadConfig() {
+    const d = defaultConfig();
+    let stored = {};
+    try {
+      stored = JSON.parse(localStorage.getItem(LS_CONFIG) || "{}");
+    } catch (e) { stored = {}; }
+    // localStorage 按 origin 隔离，端口/存储目录变化会导致数据读不到；
+    // 此时回退到本机配置文件（由 Python 端 /api/config 提供）。
+    if (!stored.apiKey && configFallback) {
+      Object.assign(stored, configFallback);
+    }
+    return Object.assign(d, stored);
+  }
+
+  // 本机配置文件缓存（由 syncConfigFromFile 填充）
+  let configFallback = null;
+
+  // 从本机 Python 服务回读配置（仅在 EXE 版有效，失败则静默忽略）
+  async function syncConfigFromFile() {
+    try {
+      const res = await fetch("/api/config", { method: "GET" });
+      if (!res.ok) return null;
+      const j = await res.json();
+      if (j && typeof j === "object" && j.apiKey) {
+        configFallback = j;
+        // 回填到 localStorage，下次打开就不用再走网络
+        try { localStorage.setItem(LS_CONFIG, JSON.stringify(j)); } catch (e) { /* 忽略 */ }
+        return j;
+      }
+    } catch (e) { /* 网页版无此接口，属正常 */ }
+    return null;
+  }
+
+  function saveConfig(cfg) {
+    try {
+      localStorage.setItem(LS_CONFIG, JSON.stringify(cfg));
+    } catch (e) { /* 隐私模式等场景可能不可写，忽略 */ }
+    // 同时落盘到本机文件：即使 localStorage 丢失也能恢复
+    try {
+      fetch("/api/config", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(cfg)
+      }).catch(function () { /* 后台写入失败不影响主流程 */ });
+    } catch (e) { /* 网页版无此接口，属正常 */ }
+    return cfg;
+  }
+  function getConfig() { return loadConfig(); }
+  function setConfig(patch) {
+    const c = Object.assign(loadConfig(), patch);
+    saveConfig(c);
+    return c;
+  }
+  function hasKey() { return !!(loadConfig().apiKey || "").trim(); }
+
+  /* ---------- 经验库 ---------- */
+  /* 经验条目结构：
+     {
+       id, category, issueType, title,
+       symptom,   // 症状：看到什么异常
+       cause,     // 原因：为什么
+       fix,       // 解法：怎么改
+       signature, // 特征签名：用于快速匹配的关键特征（如裁片名/图层/数值特征）
+       confidence,// 0~1 置信度
+       hits,      // 命中次数
+       adopted,   // 被采纳次数
+       rejected,  // 被否决次数
+       createdAt, updatedAt, lastUsedAt
+     } */
+  function loadExperience() {
+    try {
+      const s = JSON.parse(localStorage.getItem(LS_EXP) || "[]");
+      return Array.isArray(s) ? s : [];
+    } catch (e) { return []; }
+  }
+  function saveExperience(list) {
+    localStorage.setItem(LS_EXP, JSON.stringify(list));
+  }
+
+  function addExperience(entry) {
+    const list = loadExperience();
+    const now = Date.now();
+    const item = Object.assign({
+      id: "exp_" + now.toString(36) + "_" + Math.random().toString(36).slice(2, 7),
+      category: "other", issueType: "geometry",
+      title: "", symptom: "", cause: "", fix: "", signature: "",
+      confidence: 0.6, hits: 0, adopted: 0, rejected: 0,
+      createdAt: now, updatedAt: now, lastUsedAt: 0
+    }, entry || {});
+    list.unshift(item);
+    saveExperience(list);
+    return item;
+  }
+
+  function updateExperience(id, patch) {
+    const list = loadExperience();
+    const i = list.findIndex(x => x.id === id);
+    if (i < 0) return null;
+    list[i] = Object.assign({}, list[i], patch, { updatedAt: Date.now() });
+    saveExperience(list);
+    return list[i];
+  }
+
+  function removeExperience(id) {
+    const list = loadExperience().filter(x => x.id !== id);
+    saveExperience(list);
+  }
+
+  function clearExperience() {
+    localStorage.removeItem(LS_EXP);
+  }
+
+  /* ---------- 经验检索 ----------
+     检索策略（避免"只按品类"造成的跨品类重复与漂移）：
+       1. 按问题类型精确匹配 → 最高优先级
+       2. 品类匹配（当前款式品类）
+       3. 特征签名关键词命中
+     每条命中会累加 hits，并按「置信度 × 采纳率 × 类型匹配度」排序。
+  */
+  function retrieve(query) {
+    const list = loadExperience();
+    const q = query || {};
+    const cat = q.category || "other";
+    const types = q.issueTypes || [];
+    const sig = (q.signature || "").toLowerCase();
+    const now = Date.now();
+
+    const scored = list.map(e => {
+      let score = 0;
+      const reasons = [];
+
+      // 类型匹配（权重最高）
+      if (types.length && types.indexOf(e.issueType) >= 0) { score += 50; reasons.push("类型命中:" + e.issueType); }
+      else if (types.length) { score -= 20; }
+
+      // 品类匹配
+      if (e.category === cat) { score += 20; reasons.push("品类命中"); }
+      else if (e.category === "other") { score += 5; }
+      else { score -= 5; }
+
+      // 特征签名关键词
+      if (sig) {
+        const words = String(e.signature || "").toLowerCase().split(/[,，\s]+/).filter(w => w.length > 1);
+        const hit = words.filter(w => sig.indexOf(w) >= 0).length;
+        if (hit) { score += hit * 8; reasons.push("特征命中×" + hit); }
+      }
+
+      // 置信度与历史表现
+      const adoptRate = e.adopted + e.rejected > 0 ? e.adopted / (e.adopted + e.rejected) : 0.5;
+      score *= (0.4 + 0.6 * (e.confidence || 0.5)) * (0.5 + 0.5 * adoptRate);
+
+      // 很久没用过的降权（但不完全丢弃）
+      const days = (now - (e.lastUsedAt || e.createdAt)) / 86400000;
+      if (days > 90) score *= 0.7;
+
+      return { entry: e, score, reasons };
+    }).filter(x => x.score > 0);
+
+    scored.sort((a, b) => b.score - a.score);
+
+    // 记录命中
+    const list2 = loadExperience();
+    scored.slice(0, 12).forEach(s => {
+      const i = list2.findIndex(x => x.id === s.entry.id);
+      if (i >= 0) { list2[i].hits = (list2[i].hits || 0) + 1; list2[i].lastUsedAt = now; }
+    });
+    saveExperience(list2);
+
+    return scored.slice(0, 12);
+  }
+
+  /* ---------- 冲突检测 ----------
+     新经验与已有经验指向同一问题但结论不同 → 标记冲突，不自动覆盖。
+  */
+  function detectConflict(newEntry) {
+    const list = loadExperience();
+    const sig = String(newEntry.signature || "").toLowerCase();
+    if (!sig) return [];
+    const words = sig.split(/[,，\s]+/).filter(w => w.length > 2);
+    if (!words.length) return [];
+    return list.filter(e => {
+      if (e.issueType !== newEntry.issueType) return false;
+      const es = String(e.signature || "").toLowerCase();
+      const overlap = words.filter(w => es.indexOf(w) >= 0).length;
+      if (overlap < Math.min(2, words.length)) return false;
+      // 结论不同 = 冲突
+      return e.fix !== newEntry.fix || e.cause !== newEntry.cause;
+    });
+  }
+
+  /* ---------- 款式品类识别 ---------- */
+  function detectCategory(pieceNames) {
+    const text = (pieceNames || []).join(" ");
+    let best = "other", bestHit = 0;
+    for (const [key, cfg] of Object.entries(CATEGORIES)) {
+      let hit = 0;
+      cfg.keys.forEach(k => { if (text.indexOf(k) >= 0) hit++; });
+      if (hit > bestHit) { bestHit = hit; best = key; }
+    }
+    return best;
+  }
+
+  /* ---------- 签名提取：把当前款式的关键特征压缩成短文本 ---------- */
+  function buildSignature(blocks, features, rows) {
+    const names = (features && features.names) || [];
+    const top = names.slice(0, 12).join("、");
+    const ops = (rows || []).slice(0, 20).map(r => r.name + "=" + r.len).join(",");
+    return (top + " | " + ops).slice(0, 600);
+  }
+
+  /* ---------- GLM 调用 ---------- */
+  /* 通道探测结果：本地代理是否可用（EXE 运行时为 true，网页版为 false） */
+  let proxyAvailable = null;
+
+  async function detectProxy() {
+    if (proxyAvailable !== null) return proxyAvailable;
+    try {
+      const res = await fetch("/api/glm/ping", { method: "GET" });
+      proxyAvailable = res.ok;
+    } catch (e) {
+      proxyAvailable = false;
+    }
+    return proxyAvailable;
+  }
+
+  async function chat(messages, opts) {
+    const cfg = Object.assign(loadConfig(), opts || {});
+    if (!cfg.apiKey) throw new Error("未配置 API Key，请在「AI 校准」面板中填写");
+
+    const body = {
+      model: cfg.model,
+      messages,
+      temperature: cfg.temperature,
+      max_tokens: cfg.maxTokens,
+      stream: false
+    };
+    if (cfg.model === "GLM-4.6" || cfg.model === "GLM-4.5") {
+      body.thinking = { type: "disabled" };
+    }
+
+    // 通道 1（优先）：本机 Python 代理。浏览器只与 127.0.0.1 通信，同源无跨域问题。
+    // 智谱 API 本身禁止浏览器直连（预检响应无 Access-Control-Allow-* 头），直连必然失败。
+    if (await detectProxy()) {
+      try {
+        const res = await fetch("/api/glm/chat", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-GLM-Key": cfg.apiKey
+          },
+          body: JSON.stringify(body)
+        });
+        const j = await res.json().catch(() => null);
+        if (!res.ok) {
+          const msg = (j && j.error && j.error.message) ? j.error.message : ("HTTP " + res.status);
+          throw new Error("接口调用失败：" + msg);
+        }
+        const content = j.choices && j.choices[0] && j.choices[0].message
+          ? j.choices[0].message.content : "";
+        return { content: content || "", usage: j.usage || null, raw: j, via: "本地代理" };
+      } catch (e) {
+        // 代理通道失败，回退直连再试一次
+        const direct = await chatDirect(cfg, body);
+        if (direct) return direct;
+        throw e;
+      }
+    }
+
+    // 通道 2（回退）：浏览器直连。多数情况下会被 CORS 拦截，此处给出明确原因。
+    const direct = await chatDirect(cfg, body);
+    if (direct) return direct;
+    throw new Error(
+      "无法连接智谱接口。\n\n" +
+      "原因：智谱 API 不允许浏览器跨域直连（预检响应不含 Access-Control-Allow-* 头），" +
+      "浏览器会直接拦截请求。\n\n" +
+      "解决方案：\n" +
+      "1. 使用桌面版 EXE（自带本地代理，已自动走代理通道）\n" +
+      "2. 或在本机运行：python launcher.py，再打开它输出的本地地址\n" +
+      "3. 网页版如需使用，请自建一个反向代理中转服务"
+    );
+  }
+
+  // 直连尝试；失败返回 null（由调用方给出明确提示）
+  async function chatDirect(cfg, body) {
+    try {
+      const res = await fetch(cfg.baseUrl + "/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer " + cfg.apiKey
+        },
+        body: JSON.stringify(body)
+      });
+      if (!res.ok) {
+        let msg = "HTTP " + res.status;
+        try {
+          const j = await res.json();
+          if (j && j.error && j.error.message) msg = j.error.message;
+        } catch (e) { /* 忽略解析错误 */ }
+        throw new Error("接口调用失败：" + msg);
+      }
+      const j = await res.json();
+      const content = j.choices && j.choices[0] && j.choices[0].message
+        ? j.choices[0].message.content : "";
+      return { content: content || "", usage: j.usage || null, raw: j, via: "直连" };
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /* ---------- 计算参数读取（与 recalc 口径一致） ---------- */
+  function readCalcParams() {
+    const get = (id, def) => {
+      const el = document.querySelector("#" + id);
+      const v = el ? parseFloat(el.value) : NaN;
+      return isFinite(v) ? v : def;
+    };
+    return {
+      extraRate: get("extraRate", 25) / 100,
+      shrinkRate: get("shrinkRate", 5) / 100,
+      lossRate: get("lossRate", 8) / 100
+    };
+  }
+
+  /* ---------- 计算一个款式的用线量（历史参照用，口径与 recalc 一致） ---------- */
+  function calcStyleMeters(styleRows, params) {
+    let net = 0;
+    (styleRows || []).forEach(r => {
+      const st = STITCHES[r.stitch];
+      if (!st) return;
+      net += st.kind === "point" ? (r.ratio || 0) * (r.qty || 0)
+                                 : (r.len || 0) * (r.qty || 0) * (r.ratio || 0) / 100;
+    });
+    const total = net * (1 + params.extraRate) * (1 + params.shrinkRate) * (1 + params.lossRate);
+    return { net: +net.toFixed(2), total: +total.toFixed(2) };
+  }
+
+  /* ---------- 收集历史款式参照（内置 + 用户自存） ---------- */
+  function collectHistoryRefs(category) {
+    const out = [];
+    const params = readCalcParams();
+    const push = s => {
+      if (!s || !s.rows || !s.rows.length) return;
+      const calc = calcStyleMeters(s.rows, params);
+      out.push({
+        name: s.name,
+        opCount: s.rows.length,
+        actualMeters: s.actual != null ? s.actual : null,
+        calcMeters: calc.total,
+        biasPct: s.actual ? +(((calc.total - s.actual) / s.actual) * 100).toFixed(1) : null
+      });
+    };
+    if (typeof BUILTIN_STYLES !== "undefined" && BUILTIN_STYLES.length) {
+      BUILTIN_STYLES.forEach(push);
+    }
+    try {
+      const saved = JSON.parse(localStorage.getItem("threadCalcStyles") || "[]");
+      if (Array.isArray(saved)) saved.forEach(push);
+    } catch (e) { /* 数据损坏时忽略 */ }
+    return out;
+  }
+
+  /* ---------- 归一化 AI 返回的诊断项 ----------
+     模型有时把 null 写成字符串 "null" / "无"，这里统一清洗，
+     避免界面出现"建议 null"这种无法执行的条目。 */
+  const NULL_TOKENS = /^(null|undefined|none|nil|n\/a|无|无需|不需要|不适用|无需修改|保持不变|同当前)$/i;
+  function normalizeDiag(d) {
+    if (!d || typeof d !== "object") return null;
+    const out = Object.assign({}, d);
+    let v = out.suggestedValue;
+    if (typeof v === "string") {
+      const t = v.trim();
+      if (!t || NULL_TOKENS.test(t)) v = null;
+      else if (/^[-+]?\d+(\.\d+)?$/.test(t)) v = parseFloat(t);
+    } else if (typeof v !== "number" || !isFinite(v)) {
+      v = null;
+    }
+    out.suggestedValue = v;
+    if (out.currentValue == null) out.currentValue = "";
+    out.target = String(out.target || "").trim();
+    out.problem = String(out.problem || "");
+    out.reason = String(out.reason || "");
+    if (!out.target && !out.problem) return null;
+    return out;
+  }
+
+  /* ---------- 构造校准提示词 ---------- */
+  function buildCalibrationPrompt(payload, experiences) {
+    const expText = experiences.length
+      ? experiences.map((e, i) =>
+          `[${i + 1}] 类型=${e.entry.issueType} 品类=${e.entry.category} 置信=${(e.entry.confidence || 0).toFixed(2)}\n` +
+          `    症状：${e.entry.symptom}\n    原因：${e.entry.cause}\n    解法：${e.entry.fix}\n` +
+          `    特征：${e.entry.signature}`).join("\n")
+      : "（暂无历史经验，请基于几何与工艺常识分析）";
+
+    const sys = `你是服装工艺与版型的资深专家，同时熟悉服装CAD（ET/富怡等）导出的 DXF 纸样数据结构。
+
+你的任务：分析一份从服装CAD导出的DXF纸样数据，判断系统自动生成的线耗工序是否存在问题，并给出修正建议。
+
+严格要求：
+1. 只输出 JSON，不要任何解释文字或代码块标记。
+2. JSON 结构固定为：
+{
+  "diagnosis": [
+    {
+      "severity": "high|medium|low",
+      "target": "工序名称或裁片名",
+      "issueType": "naming|seam_length|stitch_map|coverage|qty|geometry|coeff",
+      "problem": "问题描述",
+      "currentValue": "当前值（如长度cm或线迹名）",
+      "suggestedValue": 0,
+      "reason": "依据"
+    }
+  ],
+  "newExperiences": [
+    {
+      "category": "pants|jacket|skirt|dress|outerwear|bag|other",
+      "issueType": "naming|seam_length|stitch_map|coverage|qty|geometry|coeff",
+      "title": "简短标题",
+      "symptom": "症状",
+      "cause": "原因",
+      "fix": "解法",
+      "signature": "用于检索的关键特征关键词，逗号分隔",
+      "confidence": 0.0
+    }
+  ],
+  "summary": "整体结论，一两句话"
+}
+
+重要原则：
+- 几何计算（弧长、轮廓周长）由系统已完成，你不要质疑数值计算本身，只判断"这个缝长是否符合该部位的工艺常识"。
+- 例如：牛仔裤侧缝应接近裤长（90~110cm），内缝应短于侧缝（70~85cm）；腰头缝长应接近腰围的一半。
+- 【每条问题都必须给出可执行的建议值】suggestedValue 是数字（单位 cm）或线迹名称字符串。
+  · 缝长类问题 → 给一个具体 cm 数字（取参考区间内的典型值 typ）
+  · 线迹映射问题 → 给线迹名称（如 "516 五线包缝"）
+  · 确实无法给出可执行修改的 → **不要写进 diagnosis 数组**，直接省略这一条。
+  · 绝不要输出字符串 "null"，也不要输出空值占位。宁可少报一条，也不要报一条无法执行的。
+- 参照基准在【工艺基准库】里：每个工序都带 ref 字段，含该部位合理缝长区间 min~max、
+  典型值 typ、数据来源 src。请用 ref 判断，并把 typ 作为建议值。
+- 另外用【历史款式参照】的实测用线量做总量校验：若当前款总用线量明显低于同类款实测值，
+  说明存在漏工序或某道工序长度偏短，请具体指出应补/应改哪一道。
+- 问题数量控制在 12 条以内，按严重程度从高到低排列。
+- newExperiences 只写"可复用的规律"，不要写只针对这一个文件的结论。`;
+
+    const user = `【当前纸样数据】
+${JSON.stringify(payload, null, 1)}
+
+【历史经验库（按相关度排序）】
+${expText}
+
+请分析并按要求的 JSON 格式输出。`;
+
+    return [{ role: "system", content: sys }, { role: "user", content: user }];
+  }
+
+  /* ---------- 主流程：AI 校准 ---------- */
+  async function calibrate(blocks, features, rows, opts) {
+    opts = opts || {};
+    const category = detectCategory(features && features.names);
+
+    // 1. 构造送检数据
+    const pieceInfo = [];
+    (blocks || []).forEach(b => {
+      const pn = b.polys.map(p => p.layer).filter(l => /[一-鿿]/.test(l));
+      const name = pn.length ? pn[0] : b.name;
+      const l1 = b.polys.filter(p => p.layer === "1");
+      if (!l1.length) return;
+      const outer = l1.sort((a, b2) => b2.verts.length - a.verts.length)[0];
+      const runs = seamRuns(outer);
+      const qtyM = /\*(\d+)/.exec(name);
+      pieceInfo.push({
+        name: name,
+        qty: qtyM ? parseInt(qtyM[1]) : 1,
+        perimeter: +(polyLength(outer.verts, outer.closed, outer.bulges) / 10).toFixed(1),
+        topRuns: runs.slice(0, 4).map(r => ({ len: +r.len.toFixed(1), angle: Math.round(r.ang) }))
+      });
+    });
+
+    const opInfo = (rows || []).map(r => {
+      const st = STITCHES[r.stitch];
+      return {
+        name: r.name,
+        stitch: st ? st.name : r.stitch,
+        len: r.len,
+        qty: r.qty,
+        ratio: r.ratio,
+        meters: +rowMeters(r).toFixed(2),
+        // 工艺基准：让 AI 有客观参照物，而不是凭空说"不匹配"
+        ref: matchBench(r.name, category),
+        // Coats 标准耗线比对照（仅参考，不参与计算）
+        coatsRef: st ? st.coats : null
+      };
+    });
+
+    // 参照基准：历史款式的实测用线量（内置 4 款 + 用户自存款式）
+    const historyRefs = collectHistoryRefs(category);
+    const curParams = readCalcParams();
+    const curCalc = calcStyleMeters(rows, curParams);
+
+    const payload = {
+      styleNo: document.querySelector("#styleNo") ? document.querySelector("#styleNo").value : "",
+      category: category,
+      categoryLabel: CATEGORIES[category].label,
+      pieceCount: pieceInfo.length,
+      pieces: pieceInfo,
+      operations: opInfo,
+      totalMeters: +opInfo.reduce((s, o) => s + o.meters, 0).toFixed(2),
+      // 工艺基准库：部位 → 合理缝长区间（已按品类过滤）
+      benchmarks: (PART_BENCHMARK[BENCH_FALLBACK[category] || category] || []).map(x => ({
+        part: x.label, min: x.min, max: x.max, typ: x.typ, src: x.src
+      })),
+      // 历史款式参照：同类款的实测用线量，用于总量校验
+      historyRefs: historyRefs,
+      current: { calcMeters: curCalc.total, opCount: (rows || []).length },
+      params: {
+        thickness: (document.querySelector("#thickness") || {}).value,
+        lossRate: (document.querySelector("#lossRate") || {}).value,
+        shrinkRate: (document.querySelector("#shrinkRate") || {}).value,
+        seamAllowance: (document.querySelector("#seamAllowance") || {}).value,
+        extraRate: (document.querySelector("#extraRate") || {}).value
+      }
+    };
+
+    // 2. 检索相关经验
+    const signature = buildSignature(blocks, features, rows);
+    const issueTypes = ["seam_length", "naming", "coverage", "stitch_map"];
+    const experiences = retrieve({
+      category: category,
+      issueTypes: issueTypes,
+      signature: signature
+    });
+
+    // 3. 调用 GLM
+    const messages = buildCalibrationPrompt(payload, experiences);
+    const model = opts.deep ? getConfig().modelDeep : getConfig().model;
+    const result = await chat(messages, { model: model });
+
+    // 4. 解析返回
+    let parsed;
+    const rawText = result.content.trim();
+    const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error("AI 返回内容不是有效 JSON：" + rawText.slice(0, 200));
+    try {
+      parsed = JSON.parse(jsonMatch[0]);
+    } catch (e) {
+      throw new Error("AI 返回 JSON 解析失败：" + e.message);
+    }
+
+    // 归一化：清洗 "null" 字符串、丢弃不可执行条目
+    const diagnosis = (Array.isArray(parsed.diagnosis) ? parsed.diagnosis : [])
+      .map(normalizeDiag)
+      .filter(Boolean);
+
+    return {
+      diagnosis: diagnosis,
+      newExperiences: parsed.newExperiences || [],
+      summary: parsed.summary || "",
+      experiencesUsed: experiences.map(e => e.entry),
+      usage: result.usage,
+      model: model,
+      payload: payload
+    };
+  }
+
+  /* ---------- 记录经验采纳/否决 ---------- */
+  function markAdopted(id) { updateExperience(id, { adopted: (loadExperience().find(x => x.id === id) || {}).adopted + 1 || 1, confidence: Math.min(1, ((loadExperience().find(x => x.id === id) || {}).confidence || 0.5) + 0.05) }); }
+  function markRejected(id) {
+    const e = loadExperience().find(x => x.id === id);
+    if (!e) return;
+    updateExperience(id, {
+      rejected: (e.rejected || 0) + 1,
+      confidence: Math.max(0.05, (e.confidence || 0.5) - 0.1)
+    });
+  }
+
+  return {
+    CATEGORIES, ISSUE_TYPES,
+    loadConfig, saveConfig, getConfig, setConfig, hasKey, syncConfigFromFile,
+    loadExperience, saveExperience, addExperience, updateExperience, removeExperience, clearExperience,
+    retrieve, detectConflict, detectCategory, buildSignature,
+    matchBench, normalizeDiag, collectHistoryRefs,
+    chat, calibrate, markAdopted, markRejected,
+    get proxyAvailable() { return proxyAvailable; },
+    detectProxy
+  };
+})();
+// 显式挂到 window，便于控制台调试与外部集成
+if (typeof window !== "undefined") window.AI = AI;
+</script>
+
+<script>
+/* ===== AI 校准 UI 层（内联） ===== */
+/* ===== AI 校准 UI 层（内联） ===== */
+/* ===== AI 校准 UI 层（内联） ===== */
+/* ===== AI 校准 UI 层（内联） ===== */
+/* ===== AI 校准 UI 层（内联） ===== */
+/* ===== AI 校准 UI 层（内联） ===== */
+/* ==========================================================================
+   AI 校准 UI 层
+   ========================================================================== */
+
+const AIUI = (() => {
+  // 供 AI 校准使用的当前 DXF 上下文（由 importDXF 写入）
+  let currentBlocks = null;
+  let currentFeatures = null;
+  let lastResult = null;
+
+  const $ = (s) => document.querySelector(s);
+
+  function setContext(blocks, features) {
+    currentBlocks = blocks;
+    currentFeatures = features;
+  }
+
+  /* ---------- 配置面板 ---------- */
+  async function openAI() {
+    // 先从本机配置文件回读：localStorage 可能因 origin 变化而丢失
+    try { await AI.syncConfigFromFile(); } catch (e) { /* 网页版无此接口 */ }
+    const cfg = AI.getConfig();
+    $("#aiApiKey").value = cfg.apiKey || "";
+    $("#aiModel").value = cfg.model || "GLM-4-Flash";
+    $("#aiModal").style.display = "flex";
+    $("#aiStatus").style.display = "none";
+    if (!AI.hasKey()) {
+      $("#aiSummary").innerHTML =
+        '<div style="padding:12px 14px;background:#fff7ed;border:1px solid #fdba74;border-radius:8px;font-size:13px">' +
+        '<strong>尚未配置 API Key</strong><br>' +
+        '<span class="ai-kv">请在上方填入智谱开放平台（bigmodel.cn）的 API Key。Key 仅保存在本机浏览器存储中，不会随程序分发。</span>' +
+        '</div>';
+    }
+  }
+  function closeAI() { $("#aiModal").style.display = "none"; }
+
+  function saveConfig() {
+    const cfg = AI.setConfig({
+      apiKey: $("#aiApiKey").value.trim(),
+      model: $("#aiModel").value
+    });
+    $("#aiApiKey").value = cfg.apiKey;
+    return cfg;
+  }
+
+  async function testConnection() {
+    const cfg = saveConfig();
+    if (!cfg.apiKey) { alert("请先填写 API Key"); return; }
+    setStatus(true, "测试连接中…");
+    try {
+      const r = await AI.chat([
+        { role: "user", content: "只回复两个字：正常" }
+      ], { maxTokens: 20 });
+      setStatus(false);
+      alert("连接成功。\n模型返回：" + (r.content || "").trim().slice(0, 50) +
+        (r.usage ? "\nToken 用量：" + r.usage.total_tokens : ""));
+    } catch (e) {
+      setStatus(false);
+      alert("连接失败：" + explainError(e));
+    }
+  }
+
+  // 把原始错误翻译成可操作的中文提示
+  function explainError(e) {
+    const msg = String(e && e.message ? e.message : e);
+    if (/401|unauthorized|鉴权|api key|invalid/i.test(msg))
+      return "API Key 无效或已失效。\n\n" + msg + "\n\n请到 https://bigmodel.cn 控制台确认 Key 是否有效、是否已删除。";
+    if (/404|not found|model/i.test(msg))
+      return "模型名不存在或无权限。\n\n" + msg + "\n\n当前模型：" + AI.getConfig().model + "\n可换一个模型试试（如 GLM-4-Flash）。";
+    if (/429|rate|限流|too many/i.test(msg))
+      return "请求过于频繁或额度不足。\n\n" + msg;
+    if (/network|failed to fetch|load failed|ERR_/i.test(msg))
+      return "网络请求失败（无法连接智谱接口）。\n\n" + msg +
+        "\n\n请检查：\n1. 本机能否访问 https://open.bigmodel.cn\n2. 是否需要配置代理\n3. Key 是否属于该账号";
+    if (/401|403|permission|权限/i.test(msg))
+      return "无访问权限。\n\n" + msg;
+    return msg;
+  }
+
+  // 环境自检：一次性列出所有关键状态（先探测代理通道）
+  async function selfCheck() {
+    try { await AI.detectProxy(); } catch (e) { /* 探测失败按不可用处理 */ }
+    const lines = [];
+    const cfg = AI.getConfig();
+    lines.push("【版本】");
+    lines.push("  APP_VERSION = " + (typeof APP_VERSION !== "undefined" ? APP_VERSION : "?"));
+    lines.push("");
+    lines.push("【模块】");
+    lines.push("  AI 模块   : " + (typeof AI !== "undefined" ? "已加载 ✓" : "未加载 ✗"));
+    lines.push("  AIUI 模块 : " + (typeof AIUI !== "undefined" ? "已加载 ✓" : "未加载 ✗"));
+    const bound = AIUI.boundIds || [];
+    lines.push("  已绑定按钮数 : " + bound.length + (bound.length ? " ✓" : " ✗"));
+    lines.push("  按钮清单     : " + (bound.join(", ") || "（无）"));
+    lines.push("");
+    lines.push("【配置】");
+    lines.push("  API Key  : " + (cfg.apiKey ? "已填写（" + cfg.apiKey.length + " 字符）" : "未填写 ✗"));
+    lines.push("  模型     : " + cfg.model);
+    lines.push("  接口地址 : " + cfg.baseUrl);
+    lines.push("  存储位置 : localStorage['threadCalcAIConfig']");
+    lines.push("");
+    lines.push("【经验库】");
+    const exp = AI.loadExperience();
+    lines.push("  条目数   : " + exp.length);
+    lines.push("");
+    lines.push("【连接通道】");
+    lines.push("  本地代理   : " + (AI.proxyAvailable === true ? "可用 ✓（走代理，无跨域问题）"
+      : AI.proxyAvailable === false ? "不可用 ✗（网页版需自建中转）" : "未探测"));
+    lines.push("  说明       : 智谱 API 禁止浏览器跨域直连，EXE 版由本机 Python 转发");
+    lines.push("");
+    lines.push("【运行环境】");
+    const loc = (typeof location !== "undefined") ? location : null;
+    lines.push("  协议     : " + (loc ? (loc.protocol === "file:" ? "file://（本地文件）" : loc.protocol) : "未知"));
+    lines.push("  来源     : " + (loc && loc.href ? loc.href.slice(0, 80) : "未知"));
+    lines.push("  fetch可用: " + (typeof fetch === "function" ? "是 ✓" : "否 ✗"));
+    lines.push("  localStorage: " + (typeof localStorage !== "undefined" ? "可用 ✓" : "不可用 ✗"));
+    return lines.join("\n");
+  }
+
+  function setStatus(on, text) {
+    const el = $("#aiStatus");
+    if (on) {
+      $("#aiStatusText").textContent = text || "分析中…";
+      el.style.display = "inline-flex";
+    } else {
+      el.style.display = "none";
+    }
+  }
+
+  /* ---------- 执行校准 ---------- */
+  async function run(deep) {
+    if (!currentBlocks) {
+      alert("请先导入 DXF 纸样，再运行 AI 校准");
+      return;
+    }
+    const cfg = saveConfig();
+    if (!cfg.apiKey) { alert("请先填写 API Key"); return; }
+
+    setStatus(true, deep ? "深度分析中（GLM-4.6，可能需要 1-2 分钟）…" : "分析中…");
+    $("#aiResult").innerHTML = "";
+    $("#aiSummary").innerHTML = "";
+
+    try {
+      const t0 = performance.now();
+      const res = await AI.calibrate(currentBlocks, currentFeatures, rows, { deep: !!deep });
+      const cost = ((performance.now() - t0) / 1000).toFixed(1);
+      lastResult = res;
+      setStatus(false);
+      renderResult(res, cost);
+    } catch (e) {
+      setStatus(false);
+      $("#aiSummary").innerHTML =
+        '<div style="padding:12px 14px;background:#fdecea;border:1px solid #f5c2c0;border-radius:8px;font-size:13px;color:#a32d2d">' +
+        '<strong>AI 校准失败</strong><br>' + escapeHtml(e.message) + '</div>';
+    }
+  }
+
+  function escapeHtml(s) {
+    return String(s == null ? "" : s)
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+  }
+
+  function renderResult(res, cost) {
+    const diag = res.diagnosis || [];
+    const newExp = res.newExperiences || [];
+
+    let html = "";
+    // 概览
+    const usedCount = (res.experiencesUsed || []).length;
+    html += '<div style="padding:11px 13px;background:#fff;border:1px solid var(--line);border-radius:8px;margin-bottom:12px;font-size:13px">';
+    html += '<div style="margin-bottom:6px"><strong>' + escapeHtml(res.summary || "分析完成") + '</strong></div>';
+    html += '<div class="ai-kv" style="font-size:12px">';
+    html += '模型 ' + escapeHtml(res.model) + ' · 耗时 ' + cost + 's';
+    if (res.usage) html += ' · Token ' + res.usage.total_tokens;
+    html += ' · 注入历史经验 ' + usedCount + ' 条';
+    html += ' · 识别问题 ' + diag.length + ' 项';
+    html += '</div>';
+
+    // 总量对照：当前款计算值 vs 同类历史款实测值
+    const pl = res.payload || {};
+    if (pl.current && pl.historyRefs && pl.historyRefs.length) {
+      const refs = pl.historyRefs.filter(h => h.actualMeters);
+      if (refs.length) {
+        const avgActual = refs.reduce((a, h) => a + h.actualMeters, 0) / refs.length;
+        const gap = pl.current.calcMeters - avgActual;
+        const gapPct = avgActual ? (gap / avgActual * 100) : 0;
+        const color = gapPct < -15 ? "#c0392b" : (gapPct > 20 ? "#b9770e" : "#1e7a3f");
+        html += '<div class="ai-kv" style="font-size:12px;margin-top:6px">';
+        html += '总量对照：当前 <b>' + pl.current.calcMeters.toFixed(1) + ' m</b>（' + pl.current.opCount + ' 道工序）';
+        html += ' vs 历史同类实测均值 <b>' + avgActual.toFixed(1) + ' m</b>';
+        html += '（' + refs.length + ' 款参照）';
+        html += ' → 偏差 <b style="color:' + color + '">' + (gapPct >= 0 ? "+" : "") + gapPct.toFixed(1) + '%</b>';
+        html += '</div>';
+      }
+    }
+    html += '</div>';
+
+    // 诊断列表
+    if (diag.length) {
+      html += '<h4 style="margin:0 0 8px;font-size:13px">发现的问题（逐条确认后生效）</h4>';
+      diag.forEach((d, i) => {
+        const sev = d.severity || "low";
+        const sevText = sev === "high" ? "严重" : sev === "medium" ? "一般" : "提示";
+        const typeLabel = (AI.ISSUE_TYPES[d.issueType] || {}).label || d.issueType || "-";
+        // 建议值：数值型可采纳；线迹名型仅提示；无值则不显示"建议"字样
+        const raw = d.suggestedValue;
+        const isNum = typeof raw === "number" && isFinite(raw);
+        const isText = typeof raw === "string" && raw.trim() !== "";
+        const canApply = isNum;
+        html += '<div class="ai-diag" id="aiDiag_' + i + '">';
+        html += '<div class="ai-diag-head">';
+        html += '<span class="ai-sev-' + sev + '">[' + sevText + ']</span>';
+        html += '<span class="ai-diag-target">' + escapeHtml(d.target) + '</span>';
+        html += '<span class="ai-badge type">' + escapeHtml(typeLabel) + '</span>';
+        if (isNum) {
+          html += '<span class="ai-kv" style="font-size:12px">当前 <b>' + escapeHtml(d.currentValue) + '</b> → 建议 <b>' + raw + ' cm</b></span>';
+        } else if (isText) {
+          html += '<span class="ai-kv" style="font-size:12px">建议线迹 <b>' + escapeHtml(raw) + '</b>（需手工调整）</span>';
+        }
+        html += '<span style="margin-left:auto"></span>';
+        if (canApply) {
+          html += '<button class="btn-ghost" style="padding:3px 10px;font-size:12px" onclick="AIUI.applyDiag(' + i + ')">采纳</button>';
+          html += '<button class="btn-ghost" style="padding:3px 10px;font-size:12px" onclick="AIUI.skipDiag(' + i + ')">忽略</button>';
+        } else {
+          html += '<button class="btn-ghost" style="padding:3px 10px;font-size:12px" onclick="AIUI.skipDiag(' + i + ')">忽略</button>';
+        }
+        html += '</div>';
+        html += '<div class="ai-diag-body">' + escapeHtml(d.problem) + '</div>';
+
+        // 工艺基准参照：让用户看懂 AI 的建议依据
+        const ref = (pl.operations || []).find(o => o.name === d.target);
+        if (ref && ref.ref) {
+          const cur = parseFloat(ref.len);
+          const mark = (isNum && cur >= ref.ref.min && cur <= ref.ref.max)
+            ? '<span style="color:#1e7a3f">在参考区间内</span>'
+            : '<span style="color:#b9770e">超出参考区间</span>';
+          html += '<div class="ai-diag-reason">工艺基准：' + escapeHtml(ref.ref.part)
+            + ' 参考区间 ' + ref.ref.min + '~' + ref.ref.max + ' cm（典型 ' + ref.ref.typ + ' cm）'
+            + ' · 当前 ' + (isFinite(cur) ? cur : '-') + ' cm → ' + mark
+            + ' · 来源 ' + escapeHtml(ref.ref.src) + '</div>';
+        }
+        if (d.reason) html += '<div class="ai-diag-reason">依据：' + escapeHtml(d.reason) + '</div>';
+        html += '</div>';
+      });
+    } else {
+      html += '<div style="padding:11px 13px;background:var(--brand-soft);border-radius:8px;font-size:13px">未发现明显问题。</div>';
+    }
+
+    // 新经验
+    if (newExp.length) {
+      html += '<h4 style="margin:0 0 8px;font-size:13px;margin-top:16px">AI 提出的新经验（需确认后入库）</h4>';
+      newExp.forEach((e, i) => {
+        const catLabel = (AI.CATEGORIES[e.category] || {}).label || e.category;
+        const typeLabel = (AI.ISSUE_TYPES[e.issueType] || {}).label || e.issueType;
+        const conflicts = AI.detectConflict(e);
+        html += '<div class="ai-exp-item" id="aiNewExp_' + i + '">';
+        html += '<div class="row1">';
+        html += '<strong style="font-size:13px">' + escapeHtml(e.title || "未命名经验") + '</strong>';
+        html += '<span class="ai-badge type">' + escapeHtml(catLabel) + '</span>';
+        html += '<span class="ai-badge">' + escapeHtml(typeLabel) + '</span>';
+        html += '<span class="ai-kv">置信 ' + (Number(e.confidence || 0).toFixed(2)) + '</span>';
+        if (conflicts.length) {
+          html += '<span class="ai-badge" style="background:#fdecea;color:#a32d2d">与 ' + conflicts.length + ' 条已有经验冲突</span>';
+        }
+        html += '<span style="margin-left:auto"></span>';
+        html += '<button class="btn-ghost" style="padding:3px 10px;font-size:12px" onclick="AIUI.saveNewExp(' + i + ')">存入经验库</button>';
+        html += '</div>';
+        html += '<div><span class="ai-kv">症状：</span>' + escapeHtml(e.symptom) + '</div>';
+        html += '<div><span class="ai-kv">原因：</span>' + escapeHtml(e.cause) + '</div>';
+        html += '<div><span class="ai-kv">解法：</span>' + escapeHtml(e.fix) + '</div>';
+        html += '<div><span class="ai-kv">特征：</span>' + escapeHtml(e.signature) + '</div>';
+        if (conflicts.length) {
+          html += '<div style="margin-top:6px;padding:6px 8px;background:#fdecea;border-radius:5px;font-size:12px;color:#a32d2d">';
+          html += '<strong>冲突提示：</strong>与已有经验「' + escapeHtml(conflicts[0].title) + '」结论不一致，存入后请人工裁决。';
+          html += '</div>';
+        }
+        html += '</div>';
+      });
+    }
+
+    $("#aiResult").innerHTML = html;
+  }
+
+  /* ---------- 采纳建议：走本地通道改长度 ---------- */
+  function applyDiag(i) {
+    if (!lastResult) return;
+    const d = (lastResult.diagnosis || [])[i];
+    if (!d) return;
+    const sug = parseFloat(d.suggestedValue);
+    if (!isFinite(sug)) {
+      // 不是数值型建议（如线迹类型），只提示
+      alert("该建议为非数值型：\n" + (d.suggestedValue || "") + "\n\n请在左侧工序表手工调整。");
+      markDiag(i, true);
+      return;
+    }
+    // 按工序名匹配，累乘数量后统一按比例修正
+    const target = String(d.target || "").trim();
+    const hits = rows.filter(r => r.name && (r.name === target || r.name.indexOf(target) >= 0 || target.indexOf(r.name) >= 0));
+    if (!hits.length) {
+      alert("未找到对应工序：" + target + "\n请在左侧工序表手工修改。");
+      markDiag(i, false);
+      return;
+    }
+    // 当前实际长度 = 目标工序的单条长度
+    const cur = hits[0].len;
+    if (!cur || cur <= 0) {
+      alert("目标工序长度为 0，无法修正（可能是点位工序）。\n请手工填写。");
+      markDiag(i, false);
+      return;
+    }
+    // 直接设为建议值，而不是按比例缩放：
+    // 比例缩放会把命中工序的所有条目一起改动，超出 AI 的建议范围。
+    hits.forEach(r => {
+      r.len = Math.round(sug * 10) / 10;
+    });
+    renderRows();
+    recalc();
+    save();
+    const el = document.getElementById("aiDiag_" + i);
+    if (el) el.classList.add("applied");
+    markDiag(i, true);
+  }
+
+  function skipDiag(i) {
+    const el = document.getElementById("aiDiag_" + i);
+    if (el) el.style.opacity = "0.45";
+    markDiag(i, false);
+  }
+
+  function markDiag(i, adopted) {
+    // 记录到本次用到的历史经验的采纳率
+    if (!lastResult) return;
+    (lastResult.experiencesUsed || []).forEach(e => {
+      if (adopted) AI.markAdopted(e.id);
+      else AI.markRejected(e.id);
+    });
+  }
+
+  /* ---------- 新经验入库 ---------- */
+  function saveNewExp(i) {
+    if (!lastResult) return;
+    const e = (lastResult.newExperiences || [])[i];
+    if (!e) return;
+    const conflicts = AI.detectConflict(e);
+    if (conflicts.length) {
+      const ok = confirm(
+        "该经验与已有经验「" + conflicts[0].title + "」结论不一致。\n\n" +
+        "继续存入会造成经验库矛盾，建议先裁决。\n\n仍要存入吗？"
+      );
+      if (!ok) return;
+    }
+    const item = AI.addExperience(e);
+    const el = document.getElementById("aiNewExp_" + i);
+    if (el) {
+      el.style.borderColor = "var(--brand)";
+      el.style.background = "var(--brand-soft)";
+    }
+    alert("已存入经验库，共 " + AI.loadExperience().length + " 条。");
+  }
+
+  /* ---------- 经验库面板 ---------- */
+  function openExp() {
+    renderExpList();
+    $("#aiExpModal").style.display = "flex";
+  }
+  function closeExp() { $("#aiExpModal").style.display = "none"; }
+
+  function initFilters() {
+    const cat = $("#aiExpFilterCat");
+    const typ = $("#aiExpFilterType");
+    if (!cat) return;
+    cat.innerHTML = '<option value="">全部品类</option>' +
+      Object.entries(AI.CATEGORIES).map(([k, v]) => '<option value="' + k + '">' + v.label + '</option>').join("");
+    typ.innerHTML = '<option value="">全部类型</option>' +
+      Object.entries(AI.ISSUE_TYPES).map(([k, v]) => '<option value="' + k + '">' + v.label + '</option>').join("");
+    cat.onchange = renderExpList;
+    typ.onchange = renderExpList;
+    $("#aiExpSearch").oninput = renderExpList;
+  }
+
+  function renderExpList() {
+    const cat = ($("#aiExpFilterCat") || {}).value || "";
+    const typ = ($("#aiExpFilterType") || {}).value || "";
+    const q = (($("#aiExpSearch") || {}).value || "").toLowerCase();
+    let list = AI.loadExperience();
+    if (cat) list = list.filter(e => e.category === cat);
+    if (typ) list = list.filter(e => e.issueType === typ);
+    if (q) {
+      list = list.filter(e =>
+        [e.title, e.symptom, e.cause, e.fix, e.signature]
+          .join(" ").toLowerCase().indexOf(q) >= 0);
+    }
+    const box = $("#aiExpList");
+    if (!box) return;
+    if (!list.length) {
+      box.innerHTML = '<div style="padding:16px;text-align:center;color:var(--muted);font-size:13px">暂无经验条目。运行一次 AI 校准后，新的规律可以存入这里。</div>';
+      return;
+    }
+    let html = "";
+    list.forEach(e => {
+      const catLabel = (AI.CATEGORIES[e.category] || {}).label || e.category;
+      const typeLabel = (AI.ISSUE_TYPES[e.issueType] || {}).label || e.issueType;
+      const conf = Number(e.confidence || 0);
+      const confColor = conf >= 0.7 ? "var(--brand-dark)" : conf >= 0.4 ? "var(--muted)" : "var(--danger)";
+      html += '<div class="ai-exp-item">';
+      html += '<div class="row1">';
+      html += '<strong style="font-size:13px">' + escapeHtml(e.title || "未命名") + '</strong>';
+      html += '<span class="ai-badge type">' + escapeHtml(catLabel) + '</span>';
+      html += '<span class="ai-badge">' + escapeHtml(typeLabel) + '</span>';
+      html += '<span class="ai-kv" style="color:' + confColor + '">置信 ' + conf.toFixed(2) + '</span>';
+      html += '<span class="ai-kv">命中 ' + (e.hits || 0) + ' · 采纳 ' + (e.adopted || 0) + ' · 否决 ' + (e.rejected || 0) + '</span>';
+      html += '<span style="margin-left:auto"></span>';
+      html += '<button class="btn-ghost" style="padding:3px 9px;font-size:12px" onclick="AIUI.delExp(\'' + e.id + '\')">删除</button>';
+      html += '</div>';
+      html += '<div><span class="ai-kv">症状：</span>' + escapeHtml(e.symptom) + '</div>';
+      html += '<div><span class="ai-kv">原因：</span>' + escapeHtml(e.cause) + '</div>';
+      html += '<div><span class="ai-kv">解法：</span>' + escapeHtml(e.fix) + '</div>';
+      if (e.signature) html += '<div><span class="ai-kv">特征：</span>' + escapeHtml(e.signature) + '</div>';
+      html += '</div>';
+    });
+    box.innerHTML = html;
+  }
+
+  function delExp(id) {
+    if (!confirm("确定删除这条经验？")) return;
+    AI.removeExperience(id);
+    renderExpList();
+  }
+
+  function exportExp() {
+    const list = AI.loadExperience();
+    if (!list.length) { alert("经验库为空"); return; }
+    const blob = new Blob([JSON.stringify(list, null, 2)], { type: "application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "线耗经验库-" + new Date().toISOString().slice(0, 10) + ".json";
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
+
+  function importExp(file) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = JSON.parse(e.target.result);
+        const arr = Array.isArray(data) ? data : (data.experience || []);
+        if (!arr.length) throw new Error("文件中没有经验条目");
+        const cur = AI.loadExperience();
+        let added = 0, merged = 0;
+        arr.forEach(x => {
+          const exists = cur.find(c => c.signature && c.signature === x.signature && c.issueType === x.issueType);
+          if (exists) { merged++; AI.updateExperience(exists.id, Object.assign({}, x, { id: exists.id, updatedAt: Date.now() })); }
+          else { AI.addExperience(x); added++; }
+        });
+        alert("导入完成：新增 " + added + " 条，更新 " + merged + " 条。");
+        renderExpList();
+      } catch (err) {
+        alert("导入失败：" + err.message);
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  /* ---------- 事件绑定 ---------- */
+  // 统一用 addEventListener（与主脚本风格一致）；缺失元素会记录下来并明确告警
+  function bind() {
+    const missing = [];
+    const bound = [];
+    const on = (id, ev, fn) => {
+      const el = $("#" + id);
+      if (!el) { missing.push(id); return; }
+      el.addEventListener(ev, fn);
+      bound.push(id);
+    };
+    AIUI.boundIds = bound;
+
+    on("btnAI", "click", openAI);
+    on("btnAIExp", "click", openExp);
+    on("btnCloseAi", "click", closeAI);
+    on("btnCloseAiExp", "click", closeExp);
+    on("btnAiSaveCfg", "click", () => {
+      saveConfig();
+      alert("配置已保存到本机\n\n（同时写入本机配置文件，重新打开软件不会丢失）");
+    });
+    on("btnAiTest", "click", testConnection);
+    on("btnAiCheck", "click", async () => alert(await selfCheck()));
+    on("btnAiRun", "click", () => run(false));
+    on("btnAiRunDeep", "click", () => run(true));
+    on("btnAiExportExp", "click", exportExp);
+    on("btnAiExpExport", "click", exportExp);
+    on("btnAiExpImport", "click", () => { const f = $("#aiExpFile"); if (f) f.click(); });
+    on("aiExpFile", "change", (e) => { if (e.target.files[0]) importExp(e.target.files[0]); e.target.value = ""; });
+    on("btnAiExpClear", "click", () => {
+      if (!AI.loadExperience().length) { alert("经验库为空"); return; }
+      if (!confirm("确定清空全部经验？此操作不可恢复。\n建议先导出备份。")) return;
+      AI.clearExperience(); renderExpList();
+    });
+    initFilters();
+    if (missing.length) {
+      console.error("[AI] 以下元素未找到，按钮未绑定:", missing.join(", "));
+    }
+    return missing;
+  }
+
+  return {
+    setContext, openAI, closeAI, openExp, closeExp, bind,
+    applyDiag, skipDiag, saveNewExp, delExp, renderExpList, exportExp, importExp,
+    testConnection, saveConfig, selfCheck, explainError
+  };
+})();
+
+// 暴露到全局，供 HTML 内联 onclick 调用
+window.AIUI = AIUI;
+
+// 初始化绑定（带自诊断，任何一处失败都能看出来而不是静默无反应）
+function aiBindSafe() {
+  const btnAI = document.querySelector("#btnAI");
+  const btnExp = document.querySelector("#btnAIExp");
+  try {
+    AIUI.bind();
+    // 验证关键按钮确实绑上了
+    const bound = AIUI.boundIds || [];
+    const ok = bound.indexOf("btnAI") >= 0 && bound.indexOf("btnAiSaveCfg") >= 0;
+    if (!ok) throw new Error("按钮绑定未生效（已绑定：" + bound.join(",") + "）");
+    console.log("[AI] 界面绑定成功");
+    if (btnExp) btnExp.title = "";
+  } catch (e) {
+    console.error("[AI] 界面绑定失败:", e);
+    const msg = "AI 模块加载失败：" + e.message;
+    if (btnAI) {
+      btnAI.onclick = () => alert(msg + "\n\n请确认使用的是最新版本（v2.3.0 及以上）。");
+      btnAI.title = msg;
+      btnAI.style.background = "#fdecea";
+    }
+    if (btnExp) {
+      btnExp.onclick = () => alert(msg + "\n\n请确认使用的是最新版本（v2.3.0 及以上）。");
+      btnExp.title = msg;
+      btnExp.style.background = "#fdecea";
+    }
+  }
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", aiBindSafe);
+} else {
+  aiBindSafe();
+}
 </script>
 </body>
 </html>
