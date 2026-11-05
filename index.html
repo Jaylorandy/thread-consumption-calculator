@@ -498,7 +498,10 @@ footer{max-width:1920px;margin:0 auto;padding:0 20px 32px;color:var(--muted);fon
           <div class="db-card" style="grid-column:1/-1">
             <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
               <h4 style="margin:0">本地备份 <span class="db-muted" style="font-weight:400;font-size:11.5px">自动保留最近 20 份自动备份</span></h4>
-              <button class="btn-ghost" id="btnOpenBkDir" style="font-size:12px;padding:6px 12px">打开备份文件夹</button>
+              <div style="display:flex;gap:8px">
+                <button class="btn-ghost" id="btnRefreshBk" style="font-size:12px;padding:6px 12px" title="重新读取备份文件夹（在文件夹里手动增删文件后点这里）">刷新</button>
+                <button class="btn-ghost" id="btnOpenBkDir" style="font-size:12px;padding:6px 12px">打开备份文件夹</button>
+              </div>
             </div>
             <div id="bkList" style="margin-top:10px"></div>
           </div>
@@ -607,7 +610,7 @@ footer{max-width:1920px;margin:0 auto;padding:0 20px 32px;color:var(--muted);fon
 
 <script>
 // ==================== 版本与更新检测 ====================
-const APP_VERSION = "2.7.0";
+const APP_VERSION = "1.0.0";
 const GH_OWNER = "Jaylorandy";
 const GH_REPO = "thread-consumption-calculator";
 const GH_RELEASE_API = `https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/releases/latest`;
@@ -2487,10 +2490,28 @@ $("#btnOpenBkDir").addEventListener("click", async () => {
   if (!(await hasHostApi())) { await appAlert("网页版没有本地备份目录，请用「立即备份」下载文件。"); return; }
   openFolder("backup");
 });
+$("#btnRefreshBk").addEventListener("click", () => renderBackupList());
 $("#bkList").addEventListener("click", e => {
   const btn = e.target.closest("[data-restorebk]");
   if (btn) restoreFromBackupName(btn.getAttribute("data-restorebk"));
+  const del = e.target.closest("[data-delbk]");
+  if (del) deleteBackupByName(del.getAttribute("data-delbk"));
 });
+
+async function deleteBackupByName(name) {
+  if (!(await appConfirm("确定删除备份「" + name + "」？\n\n删除后不可恢复。"))) return;
+  try {
+    const r = await fetch("/api/backup/delete", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: name })
+    });
+    const j = await r.json();
+    if (!j.ok) { await appAlert("删除失败：" + (j.error || "未知错误")); return; }
+  } catch (e) {
+    await appAlert("删除失败：" + ((e && e.message) || e));
+  }
+  renderBackupList();
+}
 $("#backupFile").addEventListener("change", e => {
   const f = e.target.files[0];
   if (f) restoreAll(f);
@@ -2920,12 +2941,29 @@ const BACKUP_KEYS = {
 // 桌面版本地文件能力：WebView2 不支持 a[download]（实测点了不产生任何文件），
 // 因此桌面版由本机 Python 服务直接写盘，网页版才回落到浏览器下载。
 let HOST_API = null;             // null=未探测 / true=有本机服务 / false=网页版
+let HOST_API_AT = 0;             // 上次探测时间戳：false 结果 30 秒后允许重探，防偶发失败被永久缓存
+async function probeHostApi() {
+  // 只有桌面版 launcher 会应答 /api/app-id 并返回 {"app":"threadCalc"}；
+  // 网页版（GitHub Pages 等）该路径返回 404，一眼区分。
+  // 网络层失败重试 3 次（间隔 400ms），防 WebView2 启动瞬间把桌面版误判成网页版。
+  for (let i = 0; i < 3; i++) {
+    try {
+      const r = await fetch("/api/app-id", { cache: "no-store" });
+      if (r.ok) {
+        const j = await r.json().catch(() => null);
+        if (j && j.app === "threadCalc") return true;
+      }
+      return false;   // 有 HTTP 响应但不是本机程序 → 网页版，无需重试
+    } catch (e) { /* 网络层失败，稍后重试 */ }
+    await new Promise(res => setTimeout(res, 400));
+  }
+  return false;
+}
 async function hasHostApi() {
-  if (HOST_API !== null) return HOST_API;
-  try {
-    const r = await fetch("/api/backup/list", { cache: "no-store" });
-    HOST_API = r.ok;
-  } catch (e) { HOST_API = false; }
+  if (HOST_API === true) return true;
+  if (HOST_API === false && Date.now() - HOST_API_AT < 30000) return false;
+  HOST_API = await probeHostApi();
+  HOST_API_AT = Date.now();
   return HOST_API;
 }
 
@@ -2960,7 +2998,8 @@ async function backupAll() {
       await appAlert("备份失败：" + (j.error || "未知错误"));
       return;
     } catch (e) {
-      // 本机服务异常时回落到浏览器下载
+      if (HOST_API) { await appAlert("本机备份服务异常：" + ((e && e.message) || e) + "\n\n请重启软件后重试。"); return; }
+      // 网页版回落到浏览器下载
     }
   }
 
@@ -3015,7 +3054,16 @@ async function renderBackupList() {
   }
   try {
     const r = await fetch("/api/backup/list", { cache: "no-store" });
+    if (!r.ok) {
+      // 本机服务在（探测已通过）但报错：显示真实状态码，方便远程排查
+      box.innerHTML = '<p class="db-muted" style="font-size:12px">本机备份服务异常（HTTP ' + r.status + '），请重启软件；若持续出现请联系开发者。</p>';
+      return;
+    }
     const j = await r.json();
+    if (j.ok === false) {
+      box.innerHTML = '<p class="db-muted" style="font-size:12px">本机备份服务异常：' + escHtml(j.error || "未知错误") + '</p>';
+      return;
+    }
     $("#bkPathLine").textContent = "备份位置：" + j.dir;
     const files = j.files || [];
     if (!files.length) {
@@ -3028,7 +3076,9 @@ async function renderBackupList() {
           + '<td>' + escHtml(f.name) + '</td>'
           + '<td>' + (f.size / 1024).toFixed(0) + ' KB</td>'
           + '<td>' + fmtBkTime(f.mtime) + '</td>'
-          + '<td><button class="db-apply" data-restorebk="' + escHtml(f.name) + '">恢复</button></td>'
+          + '<td style="white-space:nowrap">'
+          + '<button class="db-apply" data-restorebk="' + escHtml(f.name) + '">恢复</button> '
+          + '<button class="db-apply" data-delbk="' + escHtml(f.name) + '" style="color:#b91c1c" title="删除这份备份">删除</button></td>'
         + '</tr>').join("")
       + '</tbody></table></div>';
   } catch (e) {
