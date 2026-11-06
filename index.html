@@ -272,6 +272,7 @@ footer{max-width:1920px;margin:0 auto;padding:0 20px 32px;color:var(--muted);fon
   <nav class="sb-nav" id="sbNav">
     <div class="sb-group">工作区</div>
     <button class="sb-item active" data-view="work"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>工作台</button>
+    <button class="sb-item" data-view="carton"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="11"/></svg>纸箱算价</button>
     <div class="sb-group">数据管理</div>
     <button class="sb-item" data-view="db" data-dbtab="stitch"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>线迹类型库</button>
     <button class="sb-item" data-view="db" data-dbtab="style"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>款式库</button>
@@ -518,6 +519,50 @@ footer{max-width:1920px;margin:0 auto;padding:0 20px 32px;color:var(--muted);fon
     </div>
  </div>
 </main>
+
+<main id="view-carton" class="view" style="display:none">
+  <section class="card">
+    <h2>纸箱 / 天地板 算价</h2>
+    <p class="db-hint">公式（供应商报价单口径）：纸箱 =（长+宽+4）×（宽+高）× 2 ÷ 10000 × 平方单价；天地板 = 长 × 宽 ÷ 10000 × 平方单价。
+    平方单价基准为<b>国盛指导价</b>，可切换对比宏瑞 / 杰森报价。附加项：贴松紧、轧虚线默认 0.03$/PC（可改）；两份报价均不含 VAT 10%，需要时勾选计入。</p>
+    <div id="ctnInputs">
+      <div class="params-row">
+        <div class="field fx-sm"><label>类型</label>
+          <select id="ctnType">
+            <option value="box" selected>纸箱</option>
+            <option value="lid">天地板</option>
+          </select>
+        </div>
+        <div class="field fx-md"><label>材质（决定平方单价）</label><select id="ctnMat"></select></div>
+        <div class="field fx-sm"><label>价格基准</label>
+          <select id="ctnBase">
+            <option value="guide" selected>国盛指导价（基准）</option>
+            <option value="hr">宏瑞报价</option>
+            <option value="js">杰森报价</option>
+          </select>
+        </div>
+        <div class="field fx-sm"><label>长 cm</label><input id="ctnL" type="number" min="0.1" step="0.1" value="40"></div>
+        <div class="field fx-sm"><label>宽 cm</label><input id="ctnW" type="number" min="0.1" step="0.1" value="30"></div>
+        <div class="field fx-sm" id="ctnHField"><label>高 cm</label><input id="ctnH" type="number" min="0.1" step="0.1" value="25"></div>
+        <div class="field fx-sm"><label>数量（件）</label><input id="ctnQty" type="number" min="1" step="1" value="1000"></div>
+      </div>
+      <div class="params-row" style="margin-top:10px">
+        <div class="field fx-sm"><label style="display:flex;align-items:center;gap:8px"><input id="ctnStretch" type="checkbox">贴松紧 $/PC</label><input id="ctnStretchPrice" type="number" value="0.03" min="0" step="0.01"></div>
+        <div class="field fx-sm"><label style="display:flex;align-items:center;gap:8px"><input id="ctnDash" type="checkbox">轧虚线 $/PC</label><input id="ctnDashPrice" type="number" value="0.03" min="0" step="0.01"></div>
+        <div class="field fx-sm"><label style="display:flex;align-items:center;gap:8px"><input id="ctnVat" type="checkbox">计入 VAT 10%</label></div>
+      </div>
+    </div>
+  </section>
+  <section class="card" style="margin-top:16px">
+    <h2>计算结果</h2>
+    <div id="ctnResult"></div>
+  </section>
+  <section class="card" style="margin-top:16px">
+    <h2>全部材质价格参考（2026-10-30 两家供应商报价单）</h2>
+    <p class="db-hint">单位 $/m²；Δ 列为该供应商报价相对国盛指导价的差额，负数表示低于指导价。</p>
+    <div class="table-container"><table class="ref-table" id="ctnRefTable"></table></div>
+  </section>
+</main>
 </div>
 
 <!-- 版本更新模态框 -->
@@ -614,7 +659,7 @@ footer{max-width:1920px;margin:0 auto;padding:0 20px 32px;color:var(--muted);fon
 
 <script>
 // ==================== 版本与更新检测 ====================
-const APP_VERSION = "1.1.0";
+const APP_VERSION = "1.1.1";
 const GH_OWNER = "Jaylorandy";
 const GH_REPO = "thread-consumption-calculator";
 const GH_RELEASE_API = `https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/releases/latest`;
@@ -2696,7 +2741,7 @@ $("#sbNav").addEventListener("click", e => {
   const item = e.target.closest(".sb-item[data-view]");
   if (!item) return;
   if (item.dataset.view === "db") switchView("db", item.dataset.dbtab || "stitch");
-  else switchView("work");
+  else switchView(item.dataset.view || "work");
 });
 $("#sbAI").addEventListener("click", () => { const b = $("#btnAI"); if (b) b.click(); });
 $("#sbAIExp").addEventListener("click", () => { const b = $("#btnAIExp"); if (b) b.click(); });
@@ -2789,8 +2834,10 @@ $("#styleSelect").addEventListener("change", e => {
   } else if (v.startsWith("u")) {
     showStyleOps(parseInt(v.slice(1)), "u");
   }
-  e.target.value = ""; // 复位下拉框，允许重复选择同一款式
+  // 选中后下拉框保持显示所选款式名；下次点开下拉时再复位，仍可重复选同一款式
 });
+// 点开下拉的瞬间复位占位符：value 变回 ""，这样再选同一个款式也能触发 change
+$("#styleSelect").addEventListener("mousedown", e => { e.target.value = ""; });
 // ==================== 应用内对话框 ====================
 // 桌面版 WebView2（pywebview）不弹原生 alert/confirm/prompt（confirm 静默返回 false），
 // 全部弹窗统一走这里的自绘实现；返回 Promise，调用方用 await。
@@ -2858,17 +2905,183 @@ function setPageHeader(t, d){
 function syncSidebarActive(){
   document.querySelectorAll("#sbNav .sb-item[data-view]").forEach(b => {
     const on = b.dataset.view === currentView &&
-      (b.dataset.view === "work" || b.dataset.dbtab === currentDbTab);
+      (b.dataset.view === "work" || b.dataset.view === "carton" || b.dataset.dbtab === currentDbTab);
     b.classList.toggle("active", on);
   });
 }
 
+// ================= 纸箱算价 =================
+// 价格来源：2026-10-30 宏瑞/杰森两家供应商报价单，guide = 国盛指导价（采购基准）
+const CARTON_PRICES = [
+  { ply: "三层", name: "3-3天地板", grammage: "90+90+90",            flute: "B",   guide: 0.28, hr: 0.28, js: 0.28, lid: true },
+  { ply: "五层", name: "A=A",      grammage: "150+90+90+90+150",     flute: "BC",  guide: 0.62, hr: 0.61, js: 0.62 },
+  { ply: "五层", name: "A=A+",     grammage: "150+90+90+120+150",    flute: "BC",  guide: 0.65, hr: 0.64, js: 0.65 },
+  { ply: "五层", name: "A=A++",    grammage: "150+120+90+120+150",   flute: "BC",  guide: 0.67, hr: 0.67, js: 0.67 },
+  { ply: "五层", name: "A=A+++",   grammage: "150+120+90+180+120",   flute: "BC",  guide: 0.73, hr: 0.71, js: 0.72 },
+  { ply: "五层", name: "A=B",      grammage: "150+90+90+90+120",     flute: "BC",  guide: 0.56, hr: 0.55, js: 0.56 },
+  { ply: "五层", name: "A=B+",     grammage: "150+90+90+120+120",    flute: "BC",  guide: 0.59, hr: 0.57, js: 0.59 },
+  { ply: "五层", name: "A=B++",    grammage: "150+120+90+120+120",   flute: "BC",  guide: 0.61, hr: 0.60, js: 0.61 },
+  { ply: "五层", name: "B=B",      grammage: "120+90+90+90+120",     flute: "BC",  guide: 0.50, hr: 0.50, js: 0.50 },
+  { ply: "五层", name: "B=B+",     grammage: "120+90+90+120+120",    flute: "BC",  guide: 0.51, hr: 0.51, js: 0.50 },
+  { ply: "五层", name: "B=B++",    grammage: "120+120+90+120+120",   flute: "BC",  guide: 0.52, hr: 0.52, js: 0.52 },
+  { ply: "五层", name: "K=A",      grammage: "160+90+90+90+150",     flute: "BC",  guide: 0.64, hr: 0.61, js: 0.64 },
+  { ply: "五层", name: "K=A+",     grammage: "160+90+90+120+150",    flute: "BC",  guide: 0.65, hr: 0.64, js: 0.65 },
+  { ply: "五层", name: "K=A++",    grammage: "160+120+90+120+150",   flute: "BC",  guide: 0.66, hr: 0.65, js: 0.66 },
+  { ply: "五层", name: "K=B",      grammage: "160+90+90+90+120",     flute: "BC",  guide: 0.60, hr: 0.59, js: 0.60 },
+  { ply: "五层", name: "K=B+",     grammage: "160+90+90+120+120",    flute: "BC",  guide: 0.63, hr: 0.62, js: 0.63 },
+  { ply: "五层", name: "K=B++",    grammage: "160+120+90+120+120",   flute: "BC",  guide: 0.66, hr: 0.63, js: 0.66 },
+  { ply: "五层", name: "K=K",      grammage: "160+90+90+90+160",     flute: "BC",  guide: 0.68, hr: 0.65, js: 0.68 },
+  { ply: "五层", name: "K=K+",     grammage: "160+90+90+120+160",    flute: "BC",  guide: 0.71, hr: 0.68, js: 0.71 },
+  { ply: "五层", name: "K=K++",    grammage: "160+120+90+120+160",   flute: "BC",  guide: 0.74, hr: 0.71, js: 0.74 },
+  { ply: "七层", name: "A≡A",      grammage: "150+90+90+90+90+90+150", flute: "EBC", guide: 0.80, hr: 0.79, js: 0.80 },
+  { ply: "七层", name: "A≡A+",     grammage: "150+90+90+90+90+120+150", flute: "EBC", guide: 0.82, hr: 0.81, js: 0.82 },
+  { ply: "七层", name: "A≡B",      grammage: "150+90+90+90+90+90+120",  flute: "EBC", guide: 0.84, hr: 0.83, js: 0.84 },
+  { ply: "七层", name: "B≡B",      grammage: "120+90+90+90+90+90+120",  flute: "EBC", guide: 0.72, hr: 0.71, js: 0.72 },
+  { ply: "七层", name: "B≡B+",     grammage: "120+90+90+90+90+120+120", flute: "EBC", guide: 0.75, hr: 0.74, js: 0.75 },
+  { ply: "七层", name: "K≡A",      grammage: "160+90+90+90+90+90+150",  flute: "EBC", guide: 0.94, hr: 0.93, js: 0.94 },
+  { ply: "七层", name: "K≡B+",     grammage: "160+90+90+90+90+120+120", flute: "EBC", guide: 0.88, hr: 0.87, js: 0.88 },
+  { ply: "七层", name: "K≡K",      grammage: "160+90+90+90+90+90+160",  flute: "EBC", guide: 0.89, hr: 0.88, js: 0.89 },
+  { ply: "其他", name: "H777H",    grammage: "200+120+90+180+160",   flute: "BC",  guide: 0.92, hr: 0.90, js: 0.93 },
+  { ply: "其他", name: "H=H++",    grammage: "200+180+90+180+160",   flute: "BC",  guide: 0.93, hr: 0.91, js: 0.95 }
+];
+const CTN_BASES = [ ["guide", "国盛指导价"], ["hr", "宏瑞报价"], ["js", "杰森报价"] ];
+
+const ctn$ = sel => document.querySelector(sel);
+const ctnMoney = v => "$" + (Math.round(v * 100) / 100).toFixed(2);
+
+function initCartonView(){
+  const sel = ctn$("#ctnMat");
+  if (!sel || sel.options.length) return;
+  let html = "";
+  ["三层", "五层", "七层", "其他"].forEach(ply => {
+    const items = CARTON_PRICES.filter(m => m.ply === ply);
+    html += '<optgroup label="' + ply + '">' + items.map(m =>
+      '<option value="' + m.name + '">' + m.name + '（' + m.grammage + ' · ' + m.flute + '）</option>'
+    ).join("") + "</optgroup>";
+  });
+  sel.innerHTML = html;
+  sel.value = "A=A";
+  renderCtnRefTable();
+}
+
+function ctnCalcRow(mat, area, qty, extrasTotal){
+  const rows = CTN_BASES.map(([k, label]) => {
+    const unit = area * mat[k];
+    const goods = unit * qty;
+    const total = goods + extrasTotal;
+    const pct = k === "guide" ? null : (mat[k] / mat.guide - 1) * 100;
+    return { k, label, price: mat[k], unit, goods, total, pct };
+  });
+  return rows;
+}
+
+function calcCarton(){
+  const box = ctn$("#ctnResult");
+  if (!box) return;
+  const type = ctn$("#ctnType").value;           // box | lid
+  const matName = type === "lid" ? "3-3天地板" : ctn$("#ctnMat").value;
+  const mat = CARTON_PRICES.find(m => m.name === matName);
+  if (!mat) { box.innerHTML = '<p class="db-hint">未找到材质</p>'; return; }
+  const L = +ctn$("#ctnL").value || 0, W = +ctn$("#ctnW").value || 0;
+  const H = type === "lid" ? 0 : (+ctn$("#ctnH").value || 0);
+  const qty = Math.max(0, Math.round(+ctn$("#ctnQty").value || 0));
+  if (L <= 0 || W <= 0 || (type === "box" && H <= 0)) {
+    box.innerHTML = '<p class="db-hint">请先填写长/宽' + (type === "box" ? "/高" : "") + '（cm）。</p>';
+    return;
+  }
+  const area = type === "lid" ? L * W / 10000 : (L + W + 4) * (W + H) * 2 / 10000;
+  const base = ctn$("#ctnBase").value;
+  const baseRow = CTN_BASES.find(b => b[0] === base);
+  const sqPrice = mat[base];
+
+  let extras = 0, extraLines = [];
+  if (ctn$("#ctnStretch").checked) {
+    const p = +ctn$("#ctnStretchPrice").value || 0;
+    extras += p * qty; extraLines.push("贴松紧 $" + p.toFixed(2) + "/PC × " + qty);
+  }
+  if (ctn$("#ctnDash").checked) {
+    const p = +ctn$("#ctnDashPrice").value || 0;
+    extras += p * qty; extraLines.push("轧虚线 $" + p.toFixed(2) + "/PC × " + qty);
+  }
+  const withVat = ctn$("#ctnVat").checked;
+
+  const rows = ctnCalcRow(mat, area, qty, extras);
+  const pick = rows.find(r => r.k === base);
+  const vat = withVat ? pick.total * 0.10 : 0;
+  const grand = pick.total + vat;
+
+  let html = '<div class="kv"><span>展开面积</span><b>' + area.toFixed(4) + ' m²</b></div>'
+    + '<div class="kv"><span>平方单价（' + baseRow[1] + '）</span><b>$' + sqPrice.toFixed(2) + '/m²</b></div>'
+    + '<div class="kv"><span>单件价</span><b>$' + pick.unit.toFixed(4) + '</b></div>'
+    + '<div class="kv"><span>货款（' + qty + ' 件）</span><b>' + ctnMoney(pick.goods) + '</b></div>';
+  extraLines.forEach(l => { html += '<div class="kv"><span>' + l + '</span><b>已计入货外附加</b></div>'; });
+  if (extras > 0) html += '<div class="kv"><span>附加合计</span><b>' + ctnMoney(extras) + '</b></div>';
+  html += '<div class="kv"><span>小计（不含税）</span><b>' + ctnMoney(pick.total) + '</b></div>';
+  if (withVat) html += '<div class="kv"><span>VAT 10%</span><b>' + ctnMoney(vat) + '</b></div>';
+  html += '<div class="big-num" style="margin-top:12px">合计 ' + ctnMoney(grand) + (withVat ? "（含税）" : "（不含税）") + '</div>';
+
+  // 三家对比表
+  html += '<h3 style="margin:18px 0 8px">三家价格对比（同尺寸同数量）</h3>'
+    + '<div class="table-container"><table class="ref-table"><thead><tr><th>价格</th><th>平方单价 $/m²</th><th>单件价</th><th>货款</th><th>总价（含附加' + (withVat ? "及VAT" : "") + '）</th><th>与指导价差</th></tr></thead><tbody>';
+  rows.forEach(r => {
+    const vatR = withVat ? r.total * 0.10 : 0;
+    const tot = r.total + vatR;
+    const diff = r.k === "guide" ? "—" : (r.pct === 0 ? "±0" : (r.pct > 0 ? "+" : "") + r.pct.toFixed(1) + "%");
+    html += '<tr' + (r.k === base ? ' style="background:var(--brand-soft);font-weight:600"' : '') + '>'
+      + '<td>' + r.label + (r.k === base ? "（当前）" : "") + '</td>'
+      + '<td>' + r.price.toFixed(2) + '</td>'
+      + '<td>' + r.unit.toFixed(4) + '</td>'
+      + '<td>' + ctnMoney(r.goods) + '</td>'
+      + '<td>' + ctnMoney(tot) + '</td>'
+      + '<td>' + diff + '</td></tr>';
+  });
+  html += "</tbody></table></div>";
+  box.innerHTML = html;
+}
+
+function renderCtnRefTable(){
+  const t = ctn$("#ctnRefTable");
+  if (!t) return;
+  let html = '<thead><tr><th>层数</th><th>材质</th><th>克重</th><th>瓦楞</th><th>指导价</th><th>宏瑞</th><th>杰森</th><th>宏瑞 Δ</th><th>杰森 Δ</th></tr></thead><tbody>';
+  CARTON_PRICES.forEach(m => {
+    const d = v => { const x = v - m.guide; return x === 0 ? "±0" : (x > 0 ? "+" : "") + x.toFixed(2); };
+    html += '<tr><td>' + m.ply + '</td><td>' + m.name + '</td><td>' + m.grammage + '</td><td>' + m.flute + '</td>'
+      + '<td>' + m.guide.toFixed(2) + '</td><td>' + m.hr.toFixed(2) + '</td><td>' + m.js.toFixed(2) + '</td>'
+      + '<td>' + d(m.hr) + '</td><td>' + d(m.js) + '</td></tr>';
+  });
+  t.innerHTML = html + "</tbody>";
+}
+
+function syncCartonType(){
+  const lid = ctn$("#ctnType").value === "lid";
+  const hf = ctn$("#ctnHField"), ms = ctn$("#ctnMat");
+  if (hf) hf.style.display = lid ? "none" : "";
+  if (ms) ms.disabled = lid;
+}
+
+function bindCartonEvents(){
+  if (!ctn$("#ctnInputs") || ctn$("#ctnInputs").dataset.bound) return;
+  ctn$("#ctnInputs").dataset.bound = "1";
+  ctn$("#ctnInputs").addEventListener("input", calcCarton);
+  ctn$("#ctnInputs").addEventListener("change", () => { syncCartonType(); calcCarton(); });
+  ctn$("#ctnType").addEventListener("change", syncCartonType);
+}
+
 function switchView(view, dbtab){
   currentView = view;
-  const w = $("#view-work"), d = $("#view-db");
+  const w = $("#view-work"), d = $("#view-db"), c = $("#view-carton");
   if (w) w.style.display = view === "work" ? "" : "none";
   if (d) d.style.display = view === "db" ? "" : "none";
+  if (c) c.style.display = view === "carton" ? "" : "none";
   if (view === "db") switchDbTab(dbtab || currentDbTab || "stitch");
+  else if (view === "carton") {
+    setPageHeader("纸箱算价", "纸箱 =（长+宽+4）×（宽+高）×2 ÷10000 × 平方单价 ｜ 天地板 = 长×宽 ÷10000 × 平方单价 ｜ 基准：国盛指导价");
+    initCartonView();
+    bindCartonEvents();
+    syncCartonType();
+    calcCarton();
+    syncSidebarActive();
+  }
   else {
     setPageHeader("工作台", "导入 DXF 纸样 → 智能匹配历史工序 → 左右对比编辑 → 生成精准线耗");
     syncSidebarActive();
@@ -3177,6 +3390,17 @@ const BACKUP_KEYS = {
   threadCalcAIExperience: "AI 踩坑经验库"
 };
 
+// 备份按库拆成独立文件：每个库单独一份、单独恢复，互不影响
+const BACKUP_GROUPS = [
+  { id: "styles",    label: "款式库",        keys: ["threadCalcStyles", "threadCalcHiddenBuiltin"] },
+  { id: "templates", label: "工序模板库",    keys: ["threadCalcTemplates", "threadCalcStitches"] },
+  { id: "coefs",     label: "系数库",        keys: ["threadCalcCoefSets"] },
+  { id: "workstate", label: "工作台当前数据", keys: ["threadCalcV1"] },
+  { id: "aiexp",     label: "AI经验",        keys: ["threadCalcAIExperience"] }
+];
+const KEY2GROUP = {};
+BACKUP_GROUPS.forEach(g => g.keys.forEach(k => { KEY2GROUP[k] = g.id; }));
+
 // 桌面版本地文件能力：WebView2 不支持 a[download]（实测点了不产生任何文件），
 // 因此桌面版由本机 Python 服务直接写盘，网页版才回落到浏览器下载。
 let HOST_API = null;             // null=未探测 / true=有本机服务 / false=网页版
@@ -3206,15 +3430,41 @@ async function hasHostApi() {
   return HOST_API;
 }
 
+function isEmptyVal(v) {
+  return v === null || v === undefined
+    || (Array.isArray(v) && v.length === 0)
+    || (typeof v === "object" && !Array.isArray(v) && Object.keys(v).length === 0);
+}
+
 function snapshotAll() {
   const data = { app: "threadCalc", version: "v2", date: new Date().toISOString(), data: {} };
   Object.keys(BACKUP_KEYS).forEach(k => {
     const v = localStorage.getItem(k);
     if (v !== null) {
       try { data.data[k] = JSON.parse(v); } catch (e) { data.data[k] = v; }
+      if (isEmptyVal(data.data[k])) delete data.data[k];  // 空块不进备份，避免文件名/分组出现「空经验库」
     }
   });
   return data;
+}
+
+// 按库拆分快照：返回 [{label, payload}]，空库跳过
+function snapshotGroups() {
+  const out = [];
+  BACKUP_GROUPS.forEach(g => {
+    const data = {};
+    g.keys.forEach(k => {
+      const v = localStorage.getItem(k);
+      if (v !== null) {
+        try { data[k] = JSON.parse(v); } catch (e) { data[k] = v; }
+        if (isEmptyVal(data[k])) delete data[k];
+      }
+    });
+    if (Object.keys(data).length === 0) return;
+    out.push({ label: g.label,
+               payload: { app: "threadCalc", version: "v2", date: new Date().toISOString(), data: data } });
+  });
+  return out;
 }
 
 async function backupAll() {
@@ -3223,18 +3473,25 @@ async function backupAll() {
 
   if (await hasHostApi()) {
     try {
-      const r = await fetch("/api/backup/save", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ payload: payload })
-      });
-      const j = await r.json();
-      if (j.ok) {
-        renderBackupList();
-        const open = await appConfirm("备份成功\n\n" + j.path + "\n\n当前共 " + j.count + " 份（自动备份滚动保留最近 " + j.keep + " 份）。\n\n现在打开备份文件夹？");
-        if (open) openFolder("backup");
-        return;
+      const groups = snapshotGroups();
+      if (!groups.length) { await appAlert("当前没有可备份的数据"); return; }
+      const names = [];
+      let keep = 0;
+      for (const g of groups) {
+        const r = await fetch("/api/backup/save", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ payload: g.payload, label: g.label })
+        });
+        const j = await r.json();
+        if (!j.ok) { await appAlert("备份失败：" + (j.error || "未知错误")); return; }
+        names.push(j.name || j.path);
+        keep = j.keep || keep;
       }
-      await appAlert("备份失败：" + (j.error || "未知错误"));
+      renderBackupList();
+      const open = await appConfirm("备份成功（共 " + names.length + " 个库）\n\n"
+        + names.map(n => "· " + n).join("\n")
+        + "\n\n每库各保留最近 " + (keep || 20) + " 份自动备份。\n\n现在打开备份文件夹？");
+      if (open) openFolder("backup");
       return;
     } catch (e) {
       if (HOST_API) { await appAlert("本机备份服务异常：" + ((e && e.message) || e) + "\n\n请重启软件后重试。"); return; }
@@ -3259,10 +3516,13 @@ function scheduleAutoBackup() {
     _autoBkTimer = null;
     if (!(await hasHostApi())) return;
     try {
-      await fetch("/api/backup/auto", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ payload: snapshotAll() })
-      });
+      const groups = snapshotGroups();
+      for (const g of groups) {
+        await fetch("/api/backup/auto", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ payload: g.payload, label: g.label })
+        });
+      }
       renderBackupList();
     } catch (e) { /* 自动备份失败不影响主流程 */ }
   }, 4000);
@@ -3303,25 +3563,46 @@ async function renderBackupList() {
       box.innerHTML = '<p class="db-muted" style="font-size:12px">本机备份服务异常：' + escHtml(j.error || "未知错误") + '</p>';
       return;
     }
-    $("#bkPathLine").textContent = "备份位置：" + j.dir + "（按内容分组，每组显示最新一份，可展开历史）";
+    $("#bkPathLine").textContent = "备份位置：" + j.dir + "（按库拆分：款式库/工序模板库/系数库/工作台当前数据各自独立备份，每组显示最新一份，可展开历史）";
     const files = j.files || [];
     if (!files.length) {
       box.innerHTML = '<p class="db-muted" style="font-size:12px">暂无备份，点上方「立即备份」生成第一份。</p>';
       return;
     }
-    // 方案B：按备份内容（款式库/工序模板库/系数库…）分组，每组置顶最新一份，其余折叠
+    // 按库分组（款式库/工序模板库/系数库/工作台当前数据/AI经验），每组置顶最新一份，其余折叠；
+    // 旧版混合备份（一个文件多个库）按原内容组合单独归组
     const labelOf = k => (BACKUP_KEYS[k] || k);
+    const groupIdOf = f => {
+      const ks = (f.keys || []).filter(k => KEY2GROUP[k]);
+      if (ks.length === 1) return KEY2GROUP[ks[0]];
+      if (ks.length > 1) return "legacy:" + ks.map(k => KEY2GROUP[k]).join("|");
+      return "unknown";
+    };
+    const bkDisplayName = f => {
+      const ks = (f.keys || []).filter(k => KEY2GROUP[k]);
+      if (ks.length === 1) {
+        const gdef = BACKUP_GROUPS.find(x => x.id === KEY2GROUP[ks[0]]);
+        if (gdef) return gdef.label;
+      }
+      return (Array.isArray(f.keys) && f.keys.length) ? f.keys.map(labelOf).join(" + ") : f.name;
+    };
     const groups = [];
     const bySig = {};
     files.forEach(f => {
-      const sig = (f.keys || []).join("|");
-      if (!bySig[sig]) { bySig[sig] = { keys: f.keys || [], files: [] }; groups.push(bySig[sig]); }
+      const sig = groupIdOf(f);
+      if (!bySig[sig]) { bySig[sig] = { sig: sig, keys: f.keys || [], files: [] }; groups.push(bySig[sig]); }
       bySig[sig].files.push(f);
     });
+    const gOrder = id => {
+      const i = BACKUP_GROUPS.findIndex(x => x.id === id);
+      return i === -1 ? BACKUP_GROUPS.length : i;
+    };
+    groups.sort((a, b) => gOrder(a.sig) - gOrder(b.sig));
     let html = '';
     groups.forEach((g, gi) => {
       const latest = g.files[0];
-      const label = g.keys.length ? g.keys.map(labelOf).join("、") : "未知内容";
+      const gdef = BACKUP_GROUPS.find(x => x.id === g.sig);
+      const label = gdef ? gdef.label + "备份" : (g.keys.length ? g.keys.map(labelOf).join("、") : "未知内容");
       html += '<div style="margin:10px 0 4px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12px">'
         + '<strong>' + escHtml(label) + '</strong>'
         + '<span class="db-muted">最新 ' + fmtBkTime(latest.mtime) + ' · 共 ' + g.files.length + ' 份</span>'
@@ -3331,7 +3612,7 @@ async function renderBackupList() {
         + '<th>备份文件</th><th>大小</th><th>时间</th><th></th></tr></thead><tbody>';
       g.files.forEach((f, fi) => {
         html += '<tr' + (fi > 0 ? ' data-bksub="' + gi + '" style="display:none"' : '') + '>'
-          + '<td>' + escHtml(f.name) + '</td>'
+          + '<td title="' + escHtml(f.name) + '">' + escHtml(bkDisplayName(f)) + '</td>'
           + '<td>' + (f.size / 1024).toFixed(0) + ' KB</td>'
           + '<td>' + fmtBkTime(f.mtime) + '</td>'
           + '<td style="white-space:nowrap">'
@@ -3360,13 +3641,18 @@ async function restoreFromBackupName(name) {
 
 async function applyRestore(obj, label) {
   if (!obj || !obj.data) { await appAlert("不是有效的备份文件"); return; }
-  const keys = Object.keys(obj.data).filter(k => BACKUP_KEYS[k]);
+  const keys = Object.keys(obj.data).filter(k => BACKUP_KEYS[k] && !isEmptyVal(obj.data[k]));
   if (keys.length === 0) { await appAlert("备份文件中没有可恢复的数据"); return; }
   const lines = keys.map(k => {
     const v = obj.data[k];
     const size = Array.isArray(v) ? v.length + " 条" : "1 项";
     return "· " + BACKUP_KEYS[k] + "：" + size;
   });
+  // 旧备份里可能是空的块（如空 AI 经验库）：跳过不覆盖，防止把当前机器上攒的数据抹掉
+  const skipped = Object.keys(obj.data)
+    .filter(k => BACKUP_KEYS[k] && isEmptyVal(obj.data[k]))
+    .map(k => BACKUP_KEYS[k]);
+  if (skipped.length) lines.push("（备份中的 " + skipped.join("、") + " 是空的，已跳过不覆盖）");
   if (!(await appConfirm("将从「" + label + "」恢复以下数据并覆盖当前内容：\n\n"
       + lines.join("\n") + "\n\n恢复后页面会自动刷新，是否继续？"))) return;
   keys.forEach(k => localStorage.setItem(k, JSON.stringify(obj.data[k])));
@@ -3588,10 +3874,8 @@ $("#btnDownloadUpdate").addEventListener("click", async () => {
   }
 });
 
-// 标出当前数据所在的地址：端口/协议不同 = 另一份数据（排查"数据不见了"时看这里）
-$("#appVer").textContent = "v" + APP_VERSION + (
-  location.protocol === "file:" ? " · 本地文件" : (location.port ? " · :" + location.port : "")
-);
+// 版本号不显示端口：普通用户看不懂 :8777，排查数据地址的事交给日志
+$("#appVer").textContent = "v" + APP_VERSION;
 // 每次打开自动检测新版本（延迟执行，避免影响首屏）
 setTimeout(() => checkUpdate(false), 1500);
 
