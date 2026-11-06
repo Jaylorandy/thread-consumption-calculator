@@ -144,6 +144,11 @@ td.subtotal{font-variant-numeric:tabular-nums;font-weight:600;white-space:nowrap
 .ref-table td,.ref-table th{text-align:center}
 .ref-table td:first-child,.ref-table th:first-child{text-align:left}
 .coats-col{color:var(--muted);background:rgba(0,0,0,.025);font-style:italic}
+/* 纸箱价目表：Δ 浮动列与询价公司列突出显示 */
+.ctn-delta{font-weight:600}
+.ctn-up{color:#dc2626}.ctn-down{color:#16a34a}
+.ctn-supcol{background:rgba(37,99,235,.07)}
+.ctn-supcol input{background:rgba(255,255,255,.75);border-color:#93b4f5}
 footer{max-width:1920px;margin:0 auto;padding:0 20px 32px;color:var(--muted);font-size:12px}
 .toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
 
@@ -278,6 +283,7 @@ footer{max-width:1920px;margin:0 auto;padding:0 20px 32px;color:var(--muted);fon
     <button class="sb-item" data-view="db" data-dbtab="style"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>款式库</button>
     <button class="sb-item" data-view="db" data-dbtab="tpl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>工序模板库</button>
     <button class="sb-item" data-view="db" data-dbtab="coef"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/></svg>系数库</button>
+    <button class="sb-item" data-view="db" data-dbtab="cartonprice"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/></svg>箱子价格数据</button>
     <button class="sb-item" data-view="db" data-dbtab="backup"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>备份 / 恢复</button>
     <div class="sb-group">智能</div>
     <button class="sb-item" id="sbAI"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>AI 校准中心</button>
@@ -485,6 +491,29 @@ footer{max-width:1920px;margin:0 auto;padding:0 20px 32px;color:var(--muted);fon
         <p class="note">系数 = 用线长度 ÷ 缝迹长度。锁眼 / 钉扣 / 套结为点位定额（m/个），与缝迹长度无关。「Coats标准」为高士（Coats）《Thread Consumption Guide》公布的 7 针/cm 条件下参考值，仅供对照，不参与计算。</p>
       </div>
 
+      <!-- 箱子价格数据（需密码） -->
+      <div class="db-pane" data-pane="cartonprice">
+        <div id="cpLock">
+          <p class="db-hint">指导价格和供应商报价属于敏感数据，需要密码解锁更改。</p>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px">
+            <input id="cpPwd" type="password" placeholder="输入密码" style="width:220px">
+            <button class="btn" id="cpUnlock">解锁</button>
+            <span id="cpLockMsg" class="db-muted" style="color:#c0392b"></span>
+          </div>
+        </div>
+        <div id="cpBody" style="display:none">
+          <div class="db-toolbar">
+            <button class="btn" id="cpSave">保存修改</button>
+            <button class="btn-ghost" id="cpAddRow">新增材质</button>
+            <button class="btn-ghost" id="cpReset">恢复出厂默认价</button>
+            <button class="btn-ghost" id="cpChangePwd">修改密码</button>
+            <button class="btn-ghost btn-danger" id="cpLockBtn">重新锁定</button>
+          </div>
+          <p class="db-hint">直接改表格里的数据与指导价/供应商名称（表头输入框，改完即时生效并自动保存），价格改动点「保存修改」后纸箱算价页会自动同步。询价公司的报价请到「纸箱算价」页的价目参考表维护。</p>
+          <div class="table-container" style="max-height:55vh"><table class="ref-table" id="cpTable"></table></div>
+        </div>
+      </div>
+
       <!-- 备份 / 恢复 -->
       <div class="db-pane" data-pane="backup">
         <div class="db-cards">
@@ -523,8 +552,6 @@ footer{max-width:1920px;margin:0 auto;padding:0 20px 32px;color:var(--muted);fon
 <main id="view-carton" class="view" style="display:none">
   <section class="card">
     <h2>纸箱 / 天地板 算价</h2>
-    <p class="db-hint">公式（供应商报价单口径）：纸箱 =（长+宽+4）×（宽+高）× 2 ÷ 10000 × 平方单价；天地板 = 长 × 宽 ÷ 10000 × 平方单价。
-    平方单价基准为<b>国盛指导价</b>，可切换对比宏瑞 / 杰森报价。附加项：贴松紧、轧虚线默认 0.03$/PC（可改）；两份报价均不含 VAT 10%，需要时勾选计入。</p>
     <div id="ctnInputs">
       <div class="params-row">
         <div class="field fx-sm"><label>类型</label>
@@ -549,7 +576,7 @@ footer{max-width:1920px;margin:0 auto;padding:0 20px 32px;color:var(--muted);fon
       <div class="params-row" style="margin-top:10px">
         <div class="field fx-sm"><label style="display:flex;align-items:center;gap:8px"><input id="ctnStretch" type="checkbox">贴松紧 $/PC</label><input id="ctnStretchPrice" type="number" value="0.03" min="0" step="0.01"></div>
         <div class="field fx-sm"><label style="display:flex;align-items:center;gap:8px"><input id="ctnDash" type="checkbox">轧虚线 $/PC</label><input id="ctnDashPrice" type="number" value="0.03" min="0" step="0.01"></div>
-        <div class="field fx-sm"><label style="display:flex;align-items:center;gap:8px"><input id="ctnVat" type="checkbox">计入 VAT 10%</label></div>
+        <div class="field fx-sm"><label style="display:flex;align-items:center;gap:8px"><input id="ctnVat" type="checkbox">计入 VAT</label><input id="ctnVatRate" type="number" value="10" min="0" max="100" step="0.5" style="width:60px">%</div>
       </div>
     </div>
   </section>
@@ -558,8 +585,30 @@ footer{max-width:1920px;margin:0 auto;padding:0 20px 32px;color:var(--muted);fon
     <div id="ctnResult"></div>
   </section>
   <section class="card" style="margin-top:16px">
-    <h2>全部材质价格参考（2026-10-30 两家供应商报价单）</h2>
-    <p class="db-hint">单位 $/m²；Δ 列为该供应商报价相对国盛指导价的差额，负数表示低于指导价。</p>
+    <h2>装箱计算（按尺码）</h2>
+    <p class="db-hint">每个尺码一行：填该尺码的<b>服装总件数</b>、<b>每箱件数</b>、所用<b>箱子材质与长/宽/高</b>（cm），自动算出箱数、末箱余位与箱子价格总计。价格基准、附加项与 VAT 沿用上方设置；尺码行与询价自动保存在本机。</p>
+    <div class="params-row">
+      <div class="field fx-sm"><label>尺码体系</label>
+        <select id="pkSizeType">
+          <option value="letters">字母尺码</option>
+          <option value="numbers" selected>数字尺码</option>
+        </select>
+      </div>
+      <div class="field fx-sm"><label>单个添加</label><button class="btn-ghost" id="pkAddRow">新增尺码</button></div>
+      <div class="field fx-sm"><label>&nbsp;</label><button class="btn-ghost" id="pkClear">清空全部</button></div>
+    </div>
+    <div class="table-container" style="max-height:40vh"><table class="ref-table" id="pkTable"></table></div>
+    <div id="pkResult" style="margin-top:14px"></div>
+  </section>
+  <section class="card" style="margin-top:16px">
+    <h2 id="ctnRefTitle">全部材质价格参考（2026-10-30 两家供应商报价单）</h2>
+    <div style="display:flex;gap:8px;align-items:center;margin:6px 0 10px;flex-wrap:wrap">
+      <button class="btn-ghost" id="ctnAddSupplier">＋ 新增询价公司</button>
+      <div style="position:relative;display:inline-block">
+        <button class="btn-ghost" id="ctnSupVisBtn">显示询价公司 ▾</button>
+        <div id="ctnSupVisList" style="display:none;position:absolute;top:calc(100% + 4px);left:0;z-index:40;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 14px;box-shadow:0 8px 24px rgba(15,23,42,.16);min-width:200px"></div>
+      </div>
+    </div>
     <div class="table-container"><table class="ref-table" id="ctnRefTable"></table></div>
   </section>
 </main>
@@ -659,7 +708,7 @@ footer{max-width:1920px;margin:0 auto;padding:0 20px 32px;color:var(--muted);fon
 
 <script>
 // ==================== 版本与更新检测 ====================
-const APP_VERSION = "1.1.1";
+const APP_VERSION = "1.1.2";
 const GH_OWNER = "Jaylorandy";
 const GH_REPO = "thread-consumption-calculator";
 const GH_RELEASE_API = `https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/releases/latest`;
@@ -2894,7 +2943,8 @@ const DB_TAB_META = {
   style:  ["款式库", "内置实测工艺单款式与用户自存款式，可搜索、导出"],
   tpl:    ["工序模板库", "整套工序保存为模板，一键套用后微调"],
   coef:   ["系数库", "损耗、缩率、面料档打包成方案一键切换"],
-  backup: ["备份 / 恢复", "全量数据导出与恢复"]
+  backup: ["备份 / 恢复", "全量数据导出与恢复"],
+  cartonprice: ["箱子价格数据", "纸箱材质与指导价/供应商报价的维护，需密码解锁"]
 };
 
 function setPageHeader(t, d){
@@ -2912,7 +2962,8 @@ function syncSidebarActive(){
 
 // ================= 纸箱算价 =================
 // 价格来源：2026-10-30 宏瑞/杰森两家供应商报价单，guide = 国盛指导价（采购基准）
-const CARTON_PRICES = [
+// 出厂默认价；在「数据管理 → 箱子价格数据」输入密码解锁后可维护（存本机）
+const CARTON_PRICES_DEFAULT = [
   { ply: "三层", name: "3-3天地板", grammage: "90+90+90",            flute: "B",   guide: 0.28, hr: 0.28, js: 0.28, lid: true },
   { ply: "五层", name: "A=A",      grammage: "150+90+90+90+150",     flute: "BC",  guide: 0.62, hr: 0.61, js: 0.62 },
   { ply: "五层", name: "A=A+",     grammage: "150+90+90+120+150",    flute: "BC",  guide: 0.65, hr: 0.64, js: 0.65 },
@@ -2944,10 +2995,119 @@ const CARTON_PRICES = [
   { ply: "其他", name: "H777H",    grammage: "200+120+90+180+160",   flute: "BC",  guide: 0.92, hr: 0.90, js: 0.93 },
   { ply: "其他", name: "H=H++",    grammage: "200+180+90+180+160",   flute: "BC",  guide: 0.93, hr: 0.91, js: 0.95 }
 ];
-const CTN_BASES = [ ["guide", "国盛指导价"], ["hr", "宏瑞报价"], ["js", "杰森报价"] ];
+
+// 材质价格表：出厂默认 + 本机修改覆盖（数据管理 → 箱子价格数据）
+let CARTON_PRICES;
+try { CARTON_PRICES = JSON.parse(localStorage.getItem("threadCalcCartonPricesData") || "null"); } catch (e) { CARTON_PRICES = null; }
+// 注意必须深拷贝：后续 splice/改价都作用在工作数组上，绝不能污染出厂默认
+if (!Array.isArray(CARTON_PRICES) || !CARTON_PRICES.length) CARTON_PRICES = CARTON_PRICES_DEFAULT.map(m => Object.assign({}, m));
+// 价格数据最新维护日期：默认为报价单日期，任何保存（含恢复出厂）都会刷新
+function ctnPriceDate(){
+  try { return localStorage.getItem("threadCalcCartonPricesDate") || "2026-10-30"; } catch (e) { return "2026-10-30"; }
+}
+function saveCartonPrices(){
+  const d = new Date();
+  const ds = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  try {
+    localStorage.setItem("threadCalcCartonPricesData", JSON.stringify(CARTON_PRICES));
+    localStorage.setItem("threadCalcCartonPricesDate", ds);
+  } catch (e) {}
+}
+
+const CTN_FIXED_BASES = [ "guide", "hr", "js" ];
+// 指导价/供应商名称可改（数据管理 → 箱子价格数据表头），存本机
+let CTN_BASE_NAMES = {};
+try { CTN_BASE_NAMES = JSON.parse(localStorage.getItem("threadCalcCartonBaseNames") || "{}") || {}; } catch (e) { CTN_BASE_NAMES = {}; }
+function saveCtnBaseNames(){ try { localStorage.setItem("threadCalcCartonBaseNames", JSON.stringify(CTN_BASE_NAMES)); } catch (e) {} }
+function ctnBaseName(k, short){
+  const defs = { guide: ["国盛指导价", "指导价"], hr: ["宏瑞报价", "宏瑞"], js: ["杰森报价", "杰森"] };
+  const ov = CTN_BASE_NAMES[k];
+  if (ov && String(ov).trim()) return String(ov).trim();
+  return defs[k] ? defs[k][short ? 1 : 0] : k;
+}
+// 价格基准 = 固定三路 + 各询价公司（key = s0/s1/...，公司增删后自动重建）
+function ctnBases(){  // 隐藏的询价公司不参与基准下拉与对比
+  return CTN_FIXED_BASES.map(k => [k, ctnBaseName(k, false)])
+    .concat(ctnVisSups().map(({ s, i }) => ["s" + i, s.name || ("自定义询价" + (i + 1))]));
+}
 
 const ctn$ = sel => document.querySelector(sel);
 const ctnMoney = v => "$" + (Math.round(v * 100) / 100).toFixed(2);
+function ctnVatRate(){ const v = parseFloat((ctn$("#ctnVatRate") || {}).value); return (isNaN(v) || v < 0) ? 0 : v / 100; }
+function ctnVatLabel(){ const v = parseFloat((ctn$("#ctnVatRate") || {}).value); return "VAT " + (isNaN(v) ? 10 : v) + "%"; }
+function ctnDeltaTxt(p, g){ const x = p - g; return x === 0 ? "±0" : (x > 0 ? "+" : "") + x.toFixed(2); }
+function ctnDeltaCls(x){ return x > 0 ? "ctn-up" : (x < 0 ? "ctn-down" : ""); }  // 红涨绿跌
+function ctnDeltaHtml(p, g){ return '<span class="' + ctnDeltaCls(p - g) + '">' + ctnDeltaTxt(p, g) + '</span>'; }
+function ctnVisSups(){ return CTN_SUPPLIERS.map((s, i) => ({ s, i })).filter(x => !x.s.hidden); }  // 显示中的询价公司
+function renderCtnSupVis(){
+  const list = ctn$("#ctnSupVisList");
+  if (!list) return;
+  list.innerHTML = CTN_SUPPLIERS.length
+    ? CTN_SUPPLIERS.map((s, i) => '<label style="display:flex;align-items:center;gap:8px;padding:5px 2px;white-space:nowrap;cursor:pointer">'
+      + '<input type="checkbox" data-supvis="' + i + '"' + (s.hidden ? "" : " checked") + '>'
+      + '<span>' + escHtml(s.name || ("自定义询价" + (i + 1))) + '</span></label>').join("")
+    : '<span class="db-hint">暂无询价公司，先点「＋ 新增询价公司」。</span>';
+}
+
+// 多家自定义询价公司：[{name:公司名, prices:{材质名: $/m²}}]，存本机（不入备份）
+let CTN_SUPPLIERS = [];
+try { CTN_SUPPLIERS = JSON.parse(localStorage.getItem("threadCalcCartonSuppliers") || "[]") || []; } catch (e) { CTN_SUPPLIERS = []; }
+try {  // 旧版单列询价数据迁移为一家询价公司
+  if (!localStorage.getItem("threadCalcCartonSuppliers")) {
+    const oldC = JSON.parse(localStorage.getItem("threadCalcCartonPrices") || "null");
+    if (oldC && typeof oldC === "object" && Object.keys(oldC).length) {
+      CTN_SUPPLIERS = [{ name: "自定义询价", prices: oldC }];
+      localStorage.setItem("threadCalcCartonSuppliers", JSON.stringify(CTN_SUPPLIERS));
+      localStorage.removeItem("threadCalcCartonPrices");
+    }
+  }
+} catch (e) {}
+function saveCtnSuppliers(){ try { localStorage.setItem("threadCalcCartonSuppliers", JSON.stringify(CTN_SUPPLIERS)); } catch (e) {} }
+function ctnPrice(mat, base){
+  if (base && base[0] === "s") {
+    const s = CTN_SUPPLIERS[+base.slice(1)];
+    if (!s) return null;
+    const v = s.prices[mat.name];
+    return (typeof v === "number" && v > 0) ? v : null;
+  }
+  return mat[base];
+}
+
+// 单箱算价表单（基准/尺寸/附加勾选）持久化，重开窗口不丢
+let CTN_FORM = {};
+try { CTN_FORM = JSON.parse(localStorage.getItem("threadCalcCartonForm") || "{}") || {}; } catch (e) { CTN_FORM = {}; }
+function saveCtnForm(){
+  try {
+    localStorage.setItem("threadCalcCartonForm", JSON.stringify({
+      type: ctn$("#ctnType").value, mat: ctn$("#ctnMat").value, base: ctn$("#ctnBase").value,
+      l: ctn$("#ctnL").value, w: ctn$("#ctnW").value, h: ctn$("#ctnH").value, qty: ctn$("#ctnQty").value,
+      stretch: ctn$("#ctnStretch").checked, stretchPrice: ctn$("#ctnStretchPrice").value,
+      dash: ctn$("#ctnDash").checked, dashPrice: ctn$("#ctnDashPrice").value, vat: ctn$("#ctnVat").checked,
+      vatRate: ctn$("#ctnVatRate").value,
+      pk: (ctn$("#pkSizeType") || {}).value
+    }));
+  } catch (e) {}
+}
+function loadCtnForm(){
+  if (!CTN_FORM || !CTN_FORM.base) return;
+  const set = (id, v) => { const el = ctn$("#" + id); if (el && v !== undefined && v !== null && v !== "") el.value = v; };
+  const chk = (id, v) => { const el = ctn$("#" + id); if (el) el.checked = !!v; };
+  set("ctnType", CTN_FORM.type); set("ctnMat", CTN_FORM.mat); set("ctnBase", CTN_FORM.base);
+  set("ctnL", CTN_FORM.l); set("ctnW", CTN_FORM.w); set("ctnH", CTN_FORM.h); set("ctnQty", CTN_FORM.qty);
+  chk("ctnStretch", CTN_FORM.stretch); set("ctnStretchPrice", CTN_FORM.stretchPrice);
+  chk("ctnDash", CTN_FORM.dash); set("ctnDashPrice", CTN_FORM.dashPrice); chk("ctnVat", CTN_FORM.vat); set("ctnVatRate", CTN_FORM.vatRate);
+  set("pkSizeType", CTN_FORM.pk);
+}
+
+// 装箱行：size=尺码 qty=服装件数 per=每箱件数 mat=箱子材质 l/w/h=箱子尺寸
+let PK_ROWS = [];
+try { PK_ROWS = JSON.parse(localStorage.getItem("threadCalcCartonPack") || "[]") || []; } catch (e) { PK_ROWS = []; }
+const PK_PRESETS = {
+  letters: ["XS", "S", "M", "L", "XL", "XXL"],
+  numbers: ["160", "165", "170", "175", "180", "185"]
+};
+function savePacking(){ try { localStorage.setItem("threadCalcCartonPack", JSON.stringify(PK_ROWS)); } catch (e) {} }
+function pkRow(size){ return { size: size || "新尺码", qty: "", per: "", mat: "A=A", l: "", w: "", h: "" }; }
 
 function initCartonView(){
   const sel = ctn$("#ctnMat");
@@ -2961,38 +3121,56 @@ function initCartonView(){
   });
   sel.innerHTML = html;
   sel.value = "A=A";
+  rebuildCtnBaseSelect();
   renderCtnRefTable();
+  renderPkTable();
+}
+
+// 重建价格基准下拉：固定三路 + 已新增的询价公司；原选择已删除时回落到指导价
+function rebuildCtnBaseSelect(){
+  const sel = ctn$("#ctnBase");
+  if (!sel) return;
+  const cur = sel.value;
+  sel.innerHTML = ctnBases().map(([k, l]) =>
+    '<option value="' + k + '">' + escHtml(l) + (k === "guide" ? "（基准）" : "") + '</option>').join("");
+  sel.value = Array.from(sel.options).some(o => o.value === cur) ? cur : "guide";
 }
 
 function ctnCalcRow(mat, area, qty, extrasTotal){
-  const rows = CTN_BASES.map(([k, label]) => {
-    const unit = area * mat[k];
-    const goods = unit * qty;
-    const total = goods + extrasTotal;
-    const pct = k === "guide" ? null : (mat[k] / mat.guide - 1) * 100;
-    return { k, label, price: mat[k], unit, goods, total, pct };
+  return ctnBases().map(([k, label]) => {
+    const p = ctnPrice(mat, k);
+    const unit = p === null ? null : area * p;
+    const goods = unit === null ? null : unit * qty;
+    const total = goods === null ? null : goods + extrasTotal;
+    const pct = (k === "guide" || p === null) ? null : (p / mat.guide - 1) * 100;
+    return { k, label, price: p, unit, goods, total, pct };
   });
-  return rows;
 }
 
 function calcCarton(){
   const box = ctn$("#ctnResult");
   if (!box) return;
+  saveCtnForm();
   const type = ctn$("#ctnType").value;           // box | lid
   const matName = type === "lid" ? "3-3天地板" : ctn$("#ctnMat").value;
   const mat = CARTON_PRICES.find(m => m.name === matName);
-  if (!mat) { box.innerHTML = '<p class="db-hint">未找到材质</p>'; return; }
+  if (!mat) { box.innerHTML = '<p class="db-hint">未找到材质</p>'; calcPacking(); return; }
   const L = +ctn$("#ctnL").value || 0, W = +ctn$("#ctnW").value || 0;
   const H = type === "lid" ? 0 : (+ctn$("#ctnH").value || 0);
   const qty = Math.max(0, Math.round(+ctn$("#ctnQty").value || 0));
   if (L <= 0 || W <= 0 || (type === "box" && H <= 0)) {
     box.innerHTML = '<p class="db-hint">请先填写长/宽' + (type === "box" ? "/高" : "") + '（cm）。</p>';
-    return;
+    calcPacking(); return;
   }
   const area = type === "lid" ? L * W / 10000 : (L + W + 4) * (W + H) * 2 / 10000;
   const base = ctn$("#ctnBase").value;
-  const baseRow = CTN_BASES.find(b => b[0] === base);
-  const sqPrice = mat[base];
+  const baseRow = ctnBases().find(b => b[0] === base);
+  const sqPrice = ctnPrice(mat, base);
+  if (sqPrice === null) {
+    box.innerHTML = '<p class="db-hint">当前基准是「' + baseRow[1] + '」，但材质「' + mat.name
+      + '」还没有填自定义询价——请在下方价目参考表的「自定义询价」列填入后自动重算。</p>';
+    calcPacking(); return;
+  }
 
   let extras = 0, extraLines = [];
   if (ctn$("#ctnStretch").checked) {
@@ -3007,49 +3185,154 @@ function calcCarton(){
 
   const rows = ctnCalcRow(mat, area, qty, extras);
   const pick = rows.find(r => r.k === base);
-  const vat = withVat ? pick.total * 0.10 : 0;
+  const vat = withVat ? pick.total * ctnVatRate() : 0;
   const grand = pick.total + vat;
 
   let html = '<div class="kv"><span>展开面积</span><b>' + area.toFixed(4) + ' m²</b></div>'
     + '<div class="kv"><span>平方单价（' + baseRow[1] + '）</span><b>$' + sqPrice.toFixed(2) + '/m²</b></div>'
     + '<div class="kv"><span>单件价</span><b>$' + pick.unit.toFixed(4) + '</b></div>'
     + '<div class="kv"><span>货款（' + qty + ' 件）</span><b>' + ctnMoney(pick.goods) + '</b></div>';
-  extraLines.forEach(l => { html += '<div class="kv"><span>' + l + '</span><b>已计入货外附加</b></div>'; });
+  extraLines.forEach(l => { html += '<div class="kv"><span>' + l + '</span><b>已计入</b></div>'; });
   if (extras > 0) html += '<div class="kv"><span>附加合计</span><b>' + ctnMoney(extras) + '</b></div>';
   html += '<div class="kv"><span>小计（不含税）</span><b>' + ctnMoney(pick.total) + '</b></div>';
-  if (withVat) html += '<div class="kv"><span>VAT 10%</span><b>' + ctnMoney(vat) + '</b></div>';
+  if (withVat) html += '<div class="kv"><span>' + ctnVatLabel() + '</span><b>' + ctnMoney(vat) + '</b></div>';
   html += '<div class="big-num" style="margin-top:12px">合计 ' + ctnMoney(grand) + (withVat ? "（含税）" : "（不含税）") + '</div>';
 
-  // 三家对比表
-  html += '<h3 style="margin:18px 0 8px">三家价格对比（同尺寸同数量）</h3>'
+  // 四路价格对比（同尺寸同数量）
+  html += '<h3 style="margin:18px 0 8px">价格对比（同尺寸同数量）</h3>'
     + '<div class="table-container"><table class="ref-table"><thead><tr><th>价格</th><th>平方单价 $/m²</th><th>单件价</th><th>货款</th><th>总价（含附加' + (withVat ? "及VAT" : "") + '）</th><th>与指导价差</th></tr></thead><tbody>';
   rows.forEach(r => {
-    const vatR = withVat ? r.total * 0.10 : 0;
-    const tot = r.total + vatR;
-    const diff = r.k === "guide" ? "—" : (r.pct === 0 ? "±0" : (r.pct > 0 ? "+" : "") + r.pct.toFixed(1) + "%");
+    const na = r.price === null;
+    const tot = na ? null : (withVat ? r.total * (1 + ctnVatRate()) : r.total);
+    const diff = na ? "未填" : (r.k === "guide" ? "—" : '<span class="' + ctnDeltaCls(r.pct) + '">' + (r.pct === 0 ? "±0" : (r.pct > 0 ? "+" : "") + r.pct.toFixed(1) + "%") + '</span>');
+    let labelHtml = escHtml(r.label);
+    if (r.k && r.k[0] === "s")   // 询价公司行：公司名可直接改，自动保存
+      labelHtml = '<input data-supname="' + r.k.slice(1) + '" value="' + escHtml(r.label) + '" placeholder="询价公司名" style="width:130px">';
     html += '<tr' + (r.k === base ? ' style="background:var(--brand-soft);font-weight:600"' : '') + '>'
-      + '<td>' + r.label + (r.k === base ? "（当前）" : "") + '</td>'
-      + '<td>' + r.price.toFixed(2) + '</td>'
-      + '<td>' + r.unit.toFixed(4) + '</td>'
-      + '<td>' + ctnMoney(r.goods) + '</td>'
-      + '<td>' + ctnMoney(tot) + '</td>'
-      + '<td>' + diff + '</td></tr>';
+      + '<td>' + labelHtml + (r.k === base ? "（当前）" : "") + '</td>'
+      + '<td>' + (na ? "—" : r.price.toFixed(2)) + '</td>'
+      + '<td>' + (na ? "—" : r.unit.toFixed(4)) + '</td>'
+      + '<td>' + (na ? "—" : ctnMoney(r.goods)) + '</td>'
+      + '<td>' + (na ? "—" : ctnMoney(tot)) + '</td>'
+      + '<td class="ctn-delta">' + diff + '</td></tr>';
   });
   html += "</tbody></table></div>";
   box.innerHTML = html;
+  calcPacking();
 }
 
 function renderCtnRefTable(){
   const t = ctn$("#ctnRefTable");
   if (!t) return;
-  let html = '<thead><tr><th>层数</th><th>材质</th><th>克重</th><th>瓦楞</th><th>指导价</th><th>宏瑞</th><th>杰森</th><th>宏瑞 Δ</th><th>杰森 Δ</th></tr></thead><tbody>';
+  const tt = ctn$("#ctnRefTitle");
+  if (tt) tt.textContent = ctnPriceDate() === "2026-10-30"
+    ? "全部材质价格参考（2026-10-30 两家供应商报价单）"
+    : "全部材质价格参考（价格更新至 " + ctnPriceDate() + "）";
+  renderCtnSupVis();
+  let html = '<thead><tr><th>层数</th><th>材质</th><th>克重</th><th>瓦楞</th>'
+    + '<th>' + escHtml(ctnBaseName("guide", true)) + '</th><th>' + escHtml(ctnBaseName("hr", true)) + '</th><th>' + escHtml(ctnBaseName("js", true)) + '</th>'
+    + '<th>' + escHtml(ctnBaseName("hr", true)) + ' Δ</th><th>' + escHtml(ctnBaseName("js", true)) + ' Δ</th>';
+  ctnVisSups().forEach(({ s, i }) => {
+    const snm = s.name || ("自定义询价" + (i + 1));
+    html += '<th style="white-space:nowrap" class="ctn-supcol"><input data-supname="' + i + '" value="' + escHtml(s.name || "") + '" placeholder="询价公司名" style="width:96px;font-weight:600">'
+      + '<button class="db-del" data-supdel="' + i + '" title="删除该公司及其询价" style="padding:1px 7px;margin-left:4px">×</button></th>'
+      + '<th class="ctn-delta">' + escHtml(snm) + ' Δ</th>';
+  });
+  html += '</tr></thead><tbody>';
   CARTON_PRICES.forEach(m => {
-    const d = v => { const x = v - m.guide; return x === 0 ? "±0" : (x > 0 ? "+" : "") + x.toFixed(2); };
     html += '<tr><td>' + m.ply + '</td><td>' + m.name + '</td><td>' + m.grammage + '</td><td>' + m.flute + '</td>'
       + '<td>' + m.guide.toFixed(2) + '</td><td>' + m.hr.toFixed(2) + '</td><td>' + m.js.toFixed(2) + '</td>'
-      + '<td>' + d(m.hr) + '</td><td>' + d(m.js) + '</td></tr>';
+      + '<td class="ctn-delta">' + ctnDeltaHtml(m.hr, m.guide) + '</td><td class="ctn-delta">' + ctnDeltaHtml(m.js, m.guide) + '</td>';
+  ctnVisSups().forEach(({ s, i }) => {
+      const cv = (typeof s.prices[m.name] === "number") ? s.prices[m.name] : "";
+      html += '<td class="ctn-supcol"><input data-supprice="' + i + '" data-mat="' + escHtml(m.name) + '" type="number" min="0" step="0.01" value="' + cv + '" placeholder="询价" style="width:86px"></td>'
+        + '<td class="ctn-delta ctn-supcol">' + (cv === "" ? "—" : ctnDeltaHtml(cv, m.guide)) + '</td>';
+    });
+    html += '</tr>';
   });
   t.innerHTML = html + "</tbody>";
+}
+
+// ================= 装箱计算 =================
+function renderPkTable(){
+  const t = ctn$("#pkTable");
+  if (!t) return;
+  let html = '<thead><tr><th>尺码</th><th>服装总件数</th><th>每箱件数</th><th>箱子材质</th><th>长 cm</th><th>宽 cm</th><th>高 cm</th><th></th></tr></thead><tbody>';
+  PK_ROWS.forEach((r, i) => {
+    const matOpts = CARTON_PRICES.map(m =>
+      '<option value="' + m.name + '"' + (m.name === r.mat ? " selected" : "") + '>' + m.name + '</option>').join("");
+    html += '<tr>'
+      + '<td><input data-pki="' + i + '" data-f="size" value="' + escHtml(String(r.size || "")) + '" style="width:70px"></td>'
+      + '<td><input data-pki="' + i + '" data-f="qty" type="number" min="0" step="1" value="' + escHtml(String(r.qty ?? "")) + '" style="width:80px"></td>'
+      + '<td><input data-pki="' + i + '" data-f="per" type="number" min="1" step="1" value="' + escHtml(String(r.per ?? "")) + '" style="width:76px"></td>'
+      + '<td><select data-pki="' + i + '" data-f="mat" style="min-width:110px">' + matOpts + '</select></td>'
+      + '<td><input data-pki="' + i + '" data-f="l" type="number" min="0" step="0.5" value="' + escHtml(String(r.l ?? "")) + '" style="width:64px"></td>'
+      + '<td><input data-pki="' + i + '" data-f="w" type="number" min="0" step="0.5" value="' + escHtml(String(r.w ?? "")) + '" style="width:64px"></td>'
+      + '<td><input data-pki="' + i + '" data-f="h" type="number" min="0" step="0.5" value="' + escHtml(String(r.h ?? "")) + '" style="width:64px"></td>'
+      + '<td><button class="db-apply" data-pkdel="' + i + '">删除</button></td></tr>';
+  });
+  t.innerHTML = html + '</tbody>' + (PK_ROWS.length ? "" : '<tbody><tr><td colspan="8" class="db-hint" style="text-align:center">还没有尺码行：切换上方尺码体系自动生成对应尺码，或点「新增尺码」。</td></tr></tbody>');
+}
+
+function calcPacking(){
+  const box = ctn$("#pkResult");
+  if (!box) return;
+  const base = ctn$("#ctnBase").value;
+  const baseRow = ctnBases().find(b => b[0] === base);
+  const extraPer = (ctn$("#ctnStretch").checked ? (+ctn$("#ctnStretchPrice").value || 0) : 0)
+                 + (ctn$("#ctnDash").checked ? (+ctn$("#ctnDashPrice").value || 0) : 0);
+  const withVat = ctn$("#ctnVat").checked;
+
+  let totQty = 0, totCartons = 0, totGoods = 0;
+  const unfilled = [], warns = [];
+  let html = '<h3 style="margin:0 0 8px">装箱结果（价格基准：' + baseRow[1] + '）</h3>'
+    + '<div class="table-container"><table class="ref-table"><thead><tr><th>尺码</th><th>件数</th><th>每箱</th><th>材质/规格</th><th>箱数</th><th>满箱</th><th>末箱</th><th>单箱价</th><th>小计</th></tr></thead><tbody>';
+  PK_ROWS.forEach((r, i) => {
+    const label = escHtml(String(r.size || "第" + (i + 1) + "行"));
+    const qty = parseInt(r.qty, 10) || 0, per = parseInt(r.per, 10) || 0;
+    const L = +r.l || 0, W = +r.w || 0, H = +r.h || 0;
+    const mat = CARTON_PRICES.find(m => m.name === r.mat);
+    const spec = mat ? escHtml(mat.name) : "-";
+    if (qty <= 0 && L <= 0) return;   // 全空行跳过
+    totQty += qty;
+    if (qty > 0 && per <= 0) warns.push(label + "：未填每箱件数");
+    let full = 0, rem = 0, cartons = 0;
+    if (qty > 0 && per > 0) { full = Math.floor(qty / per); rem = qty - full * per; cartons = full + (rem > 0 ? 1 : 0); }
+    totCartons += cartons;
+    let unit = null;
+    if (mat && cartons > 0 && L > 0 && W > 0 && (mat.lid || H > 0)) {
+      const area = mat.lid ? L * W / 10000 : (L + W + 4) * (W + H) * 2 / 10000;
+      const p = ctnPrice(mat, base);
+      if (p !== null) unit = area * p;
+    }
+    const goods = (unit !== null) ? unit * cartons : null;
+    if (goods !== null) totGoods += goods;
+    const lastTxt = rem > 0 ? rem + " 件 / 余 " + (per - rem) : (cartons > 0 ? "整箱" : "—");
+    if (rem > 0) unfilled.push(label + " · " + spec + "：末箱 " + rem + "/" + per + " 件，还差 " + (per - rem) + " 件装满");
+    html += '<tr' + (rem > 0 ? ' style="background:var(--brand-soft)"' : '') + '>'
+      + '<td>' + label + '</td><td>' + qty + '</td><td>' + (per || "—") + '</td><td>' + spec + '</td>'
+      + '<td>' + (cartons || "—") + '</td><td>' + (full || "—") + '</td><td>' + lastTxt + '</td>'
+      + '<td>' + (unit === null ? "未算" : ctnMoney(unit)) + '</td>'
+      + '<td>' + (goods === null ? "—" : ctnMoney(goods)) + '</td></tr>';
+  });
+  html += '</tbody></table></div>';
+
+  const extras = extraPer * totCartons;
+  const sub = totGoods + extras;
+  const vat = withVat ? sub * ctnVatRate() : 0;
+  html += '<div style="margin-top:12px">'
+    + '<div class="kv"><span>服装总件数</span><b>' + totQty + ' 件</b></div>'
+    + '<div class="kv"><span>总共需要</span><b>' + totCartons + ' 个箱子</b></div>'
+    + '<div class="kv"><span>箱子货款</span><b>' + ctnMoney(totGoods) + '</b></div>';
+  if (extras > 0) html += '<div class="kv"><span>附加合计（贴松紧/轧虚线，按每箱计）</span><b>' + ctnMoney(extras) + '</b></div>';
+  html += '<div class="kv"><span>小计（不含税）</span><b>' + ctnMoney(sub) + '</b></div>';
+  if (withVat) html += '<div class="kv"><span>' + ctnVatLabel() + '</span><b>' + ctnMoney(vat) + '</b></div>';
+  html += '<div class="big-num" style="margin-top:12px">箱子价格总计 ' + ctnMoney(sub + vat) + (withVat ? "（含税）" : "（不含税）") + '</div>'
+    + '<p class="db-hint" style="margin-top:8px">价格数据日期：' + ctnPriceDate()
+    + (ctnPriceDate() === "2026-10-30" ? "（两家供应商报价单，箱子价格数据未修改）" : "（箱子价格数据最新维护日期）") + '</p></div>';
+  if (unfilled.length) html += '<p class="db-hint" style="margin-top:10px"><b>未装满的箱子：</b><br>· ' + unfilled.join('<br>· ') + '</p>';
+  if (warns.length) html += '<p class="db-hint" style="margin-top:6px">注意：' + warns.join('；') + '</p>';
+  box.innerHTML = html;
 }
 
 function syncCartonType(){
@@ -3065,6 +3348,265 @@ function bindCartonEvents(){
   ctn$("#ctnInputs").addEventListener("input", calcCarton);
   ctn$("#ctnInputs").addEventListener("change", () => { syncCartonType(); calcCarton(); });
   ctn$("#ctnType").addEventListener("change", syncCartonType);
+
+  // 询价公司列：改价 / 改公司名 / 删除公司
+  const rt = ctn$("#ctnRefTable");
+  if (rt && !rt.dataset.bound) {
+    rt.dataset.bound = "1";
+    rt.addEventListener("input", e => {
+      const nm = e.target.closest("[data-supname]");
+      if (nm) { const i = +nm.dataset.supname; if (CTN_SUPPLIERS[i]) { CTN_SUPPLIERS[i].name = nm.value; saveCtnSuppliers(); rebuildCtnBaseSelect(); } return; }
+      const el = e.target.closest("[data-supprice]");
+      if (!el) return;
+      const i = +el.dataset.supprice, mat = el.dataset.mat;
+      if (!CTN_SUPPLIERS[i]) return;
+      const v = parseFloat(el.value);
+      const bad = (el.value === "" || isNaN(v) || v <= 0);
+      if (bad) delete CTN_SUPPLIERS[i].prices[mat];
+      else CTN_SUPPLIERS[i].prices[mat] = v;
+      saveCtnSuppliers();
+      // 同行 Δ 差值实时刷新（不整表重渲染，避免输入丢焦点）
+      const td = el.closest("td"), dc = td && td.nextElementSibling;
+      const mm = CARTON_PRICES.find(x => x.name === mat);
+      if (dc && dc.classList.contains("ctn-delta") && mm)
+        dc.innerHTML = bad ? "—" : ctnDeltaHtml(v, mm.guide);
+      calcCarton();
+    });
+    rt.addEventListener("click", e => {
+      const del = e.target.closest("[data-supdel]");
+      if (!del) return;
+      const i = +del.dataset.supdel;
+      if (!CTN_SUPPLIERS[i]) return;
+      appConfirm("删除询价公司「" + (CTN_SUPPLIERS[i].name || "未命名") + "」及其全部询价？").then(ok => {
+        if (!ok) return;
+        CTN_SUPPLIERS.splice(i, 1);
+        saveCtnSuppliers(); renderCtnRefTable(); rebuildCtnBaseSelect(); calcCarton();
+      });
+    });
+  }
+  // 价格对比表里的公司名输入：只存不重渲染，避免打字丢焦点
+  const res = ctn$("#ctnResult");
+  if (res && !res.dataset.supbound) {
+    res.dataset.supbound = "1";
+    res.addEventListener("input", e => {
+      const nm = e.target.closest("[data-supname]");
+      if (!nm) return;
+      const i = +nm.dataset.supname;
+      if (CTN_SUPPLIERS[i]) { CTN_SUPPLIERS[i].name = nm.value; saveCtnSuppliers(); rebuildCtnBaseSelect(); }
+    });
+  }
+  // 新增询价公司
+  const addSup = ctn$("#ctnAddSupplier");
+  if (addSup && !addSup.dataset.bound) {
+    addSup.dataset.bound = "1";
+    addSup.onclick = () => {
+      CTN_SUPPLIERS.push({ name: "询价公司" + (CTN_SUPPLIERS.length + 1), prices: {} });
+      saveCtnSuppliers(); renderCtnRefTable(); rebuildCtnBaseSelect(); calcCarton();
+    };
+  }
+  // 显示/隐藏询价公司下拉
+  const visBtn = ctn$("#ctnSupVisBtn"), visList = ctn$("#ctnSupVisList");
+  if (visBtn && visList && !visBtn.dataset.bound) {
+    visBtn.dataset.bound = "1";
+    visBtn.onclick = () => {
+      const show = visList.style.display === "none";
+      renderCtnSupVis();
+      visList.style.display = show ? "block" : "none";
+    };
+    visList.addEventListener("change", e => {
+      const cb = e.target.closest("[data-supvis]");
+      if (!cb) return;
+      const i = +cb.dataset.supvis;
+      if (!CTN_SUPPLIERS[i]) return;
+      if (cb.checked) delete CTN_SUPPLIERS[i].hidden;
+      else CTN_SUPPLIERS[i].hidden = true;
+      saveCtnSuppliers(); renderCtnRefTable(); rebuildCtnBaseSelect(); calcCarton();
+    });
+  }
+
+  // 装箱表
+  const pt = ctn$("#pkTable");
+  if (pt && !pt.dataset.bound) {
+    pt.dataset.bound = "1";
+    const onEdit = e => {
+      const el = e.target.closest("[data-pki]");
+      if (!el || !PK_ROWS[+el.dataset.pki]) return;
+      PK_ROWS[+el.dataset.pki][el.dataset.f] = el.value;
+      savePacking();
+      calcCarton();
+    };
+    pt.addEventListener("input", onEdit);
+    pt.addEventListener("change", onEdit);
+    pt.addEventListener("click", e => {
+      const del = e.target.closest("[data-pkdel]");
+      if (!del) return;
+      PK_ROWS.splice(+del.dataset.pkdel, 1);
+      savePacking(); renderPkTable(); calcCarton();
+    });
+  }
+  // 切换尺码体系自动生成对应尺码行（有已填数据时先确认，取消则回退选择）
+  const stEl = ctn$("#pkSizeType");
+  if (stEl && !stEl.dataset.bound) {
+    stEl.dataset.bound = "1";
+    let pkCurType = stEl.value;
+    stEl.addEventListener("change", async () => {
+      const target = stEl.value;
+      if (PK_ROWS.some(r => r.qty || r.per) && !(await appConfirm("切换尺码体系会替换现有全部尺码行（含已填数据），继续？"))) { stEl.value = pkCurType; return; }
+      pkCurType = target;
+      PK_ROWS = PK_PRESETS[target].map(s => pkRow(s));
+      savePacking(); renderPkTable(); calcCarton();
+    });
+  }
+  if (ctn$("#pkAddRow")) {
+    ctn$("#pkAddRow").onclick = async () => {
+      const name = (await appPrompt("新尺码名称（如 3XL / 190）：", "")) || "";
+      if (!name.trim()) return;
+      PK_ROWS.push(pkRow(name.trim()));
+      savePacking(); renderPkTable(); calcCarton();
+    };
+    ctn$("#pkClear").onclick = async () => {
+      if (PK_ROWS.length && !(await appConfirm("清空全部尺码行？"))) return;
+      PK_ROWS = []; savePacking(); renderPkTable(); calcCarton();
+    };
+  }
+}
+
+// ================= 箱子价格数据（数据管理，需密码解锁） =================
+let cpUnlocked = false;
+const CP_DEFAULT_PWD = "gtiggs007";
+function cpGetPwd(){ try { return localStorage.getItem("threadCalcCartonPwd") || CP_DEFAULT_PWD; } catch (e) { return CP_DEFAULT_PWD; } }
+function showCpState(){
+  const lock = $("#cpLock"), body = $("#cpBody");
+  if (lock) lock.style.display = cpUnlocked ? "none" : "";
+  if (body) body.style.display = cpUnlocked ? "" : "none";
+}
+function renderCpTable(){
+  const t = $("#cpTable");
+  if (!t) return;
+  let html = '<thead><tr><th>层数</th><th>材质</th><th>克重</th><th>瓦楞</th>'
+    + '<th><input data-basename="guide" value="' + escHtml(ctnBaseName("guide", true)) + '" placeholder="指导价名称" title="指导价名称，可改" style="width:96px;font-weight:600"></th>'
+    + '<th><input data-basename="hr" value="' + escHtml(ctnBaseName("hr", true)) + '" placeholder="供应商名称" title="供应商名称，可改" style="width:96px;font-weight:600"></th>'
+    + '<th><input data-basename="js" value="' + escHtml(ctnBaseName("js", true)) + '" placeholder="供应商名称" title="供应商名称，可改" style="width:96px;font-weight:600"></th>'
+    + '<th></th></tr></thead><tbody>';
+  CARTON_PRICES.forEach((m, i) => {
+    html += '<tr>'
+      + '<td><input data-cp="' + i + '" data-f="ply" value="' + escHtml(m.ply) + '" style="width:64px"></td>'
+      + '<td><input data-cp="' + i + '" data-f="name" value="' + escHtml(m.name) + '" style="width:96px"></td>'
+      + '<td><input data-cp="' + i + '" data-f="grammage" value="' + escHtml(m.grammage) + '" style="width:170px"></td>'
+      + '<td><input data-cp="' + i + '" data-f="flute" value="' + escHtml(m.flute) + '" style="width:56px"></td>'
+      + '<td><input data-cp="' + i + '" data-f="guide" type="number" min="0" step="0.01" value="' + m.guide + '" style="width:76px"></td>'
+      + '<td><input data-cp="' + i + '" data-f="hr" type="number" min="0" step="0.01" value="' + m.hr + '" style="width:76px"></td>'
+      + '<td><input data-cp="' + i + '" data-f="js" type="number" min="0" step="0.01" value="' + m.js + '" style="width:76px"></td>'
+      + '<td><button class="db-del" data-cpdel="' + i + '">删除</button></td>'
+      + '</tr>';
+  });
+  t.innerHTML = html + '</tbody>';
+}
+// 价格数据保存后，同步纸箱算价页（材质下拉 / 询价表 / 装箱材质）
+function syncCartonPricesAcross(){
+  const sel = ctn$("#ctnMat");
+  if (sel) sel.innerHTML = "";
+  initCartonView();
+  calcCarton();
+}
+function bindCpEvents(){
+  const t = $("#cpTable");
+  if (t && !t.dataset.bound) {
+    t.dataset.bound = "1";
+    t.addEventListener("input", e => {
+      const bn = e.target.closest("[data-basename]");
+      if (bn) { CTN_BASE_NAMES[bn.dataset.basename] = bn.value; saveCtnBaseNames(); rebuildCtnBaseSelect(); return; }
+      const el = e.target.closest("[data-cp]");
+      if (!el) return;
+      const m = CARTON_PRICES[+el.dataset.cp];
+      if (!m) return;
+      const f = el.dataset.f;
+      if (f === "guide" || f === "hr" || f === "js") { const v = parseFloat(el.value); if (!isNaN(v) && v >= 0) m[f] = v; }
+      else m[f] = el.value;
+    });
+    t.addEventListener("click", e => {
+      const del = e.target.closest("[data-cpdel]");
+      if (!del) return;
+      const i = +del.dataset.cpdel, m = CARTON_PRICES[i];
+      if (!m) return;
+      appConfirm("删除材质「" + m.name + "」？纸箱算价与装箱的材质下拉会同步移除。").then(ok => {
+        if (!ok) return;
+        CARTON_PRICES.splice(i, 1);
+        saveCartonPrices(); renderCpTable(); syncCartonPricesAcross();
+      });
+    });
+  }
+  const pwd = $("#cpPwd");
+  if (pwd && !pwd.dataset.bound) {
+    pwd.dataset.bound = "1";
+    pwd.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); $("#cpUnlock").click(); } });
+  }
+  const unlock = $("#cpUnlock");
+  if (unlock && !unlock.dataset.bound) {
+    unlock.dataset.bound = "1";
+    unlock.onclick = () => {
+      const msg = $("#cpLockMsg");
+      if ($("#cpPwd").value === cpGetPwd()) {
+        cpUnlocked = true;
+        $("#cpPwd").value = "";
+        if (msg) msg.textContent = "";
+        showCpState(); renderCpTable();
+      } else if (msg) { msg.textContent = "密码不正确"; }
+    };
+  }
+  const save = $("#cpSave");
+  if (save && !save.dataset.bound) {
+    save.dataset.bound = "1";
+    save.onclick = () => {
+      saveCartonPrices();
+      syncCartonPricesAcross();
+      appAlert("箱子价格数据已保存，纸箱算价与装箱计算已同步。");
+    };
+  }
+  const add = $("#cpAddRow");
+  if (add && !add.dataset.bound) {
+    add.dataset.bound = "1";
+    add.onclick = () => {
+      CARTON_PRICES.push({ ply: "五层", name: "新材质", grammage: "", flute: "BC", guide: 0, hr: 0, js: 0 });
+      renderCpTable();
+      const rows = $("#cpTable").querySelectorAll("tbody tr");
+      const last = rows[rows.length - 1];
+      if (last) { const inp = last.querySelector('[data-f="name"]'); if (inp) inp.focus(); }
+    };
+  }
+  const reset = $("#cpReset");
+  if (reset && !reset.dataset.bound) {
+    reset.dataset.bound = "1";
+    reset.onclick = () => {
+      appConfirm("恢复出厂默认的材质价格表？当前全部修改（含新增/删除材质）会被覆盖。").then(ok => {
+        if (!ok) return;
+        CARTON_PRICES = CARTON_PRICES_DEFAULT.map(m => Object.assign({}, m));
+        saveCartonPrices(); renderCpTable(); syncCartonPricesAcross();
+      });
+    };
+  }
+  const chg = $("#cpChangePwd");
+  if (chg && !chg.dataset.bound) {
+    chg.dataset.bound = "1";
+    chg.onclick = async () => {
+      const old = await appPrompt("请输入当前密码：", "");
+      if (old === null) return;
+      if (old !== cpGetPwd()) { appAlert("当前密码不正确，未修改。"); return; }
+      const nw = await appPrompt("输入新密码（至少 4 位）：", "");
+      if (nw === null) return;
+      if (nw.trim().length < 4) { appAlert("新密码至少 4 位。"); return; }
+      const nw2 = await appPrompt("再输入一遍新密码确认：", "");
+      if (nw2 === null) return;
+      if (nw2 !== nw) { appAlert("两次输入不一致，未修改。"); return; }
+      try { localStorage.setItem("threadCalcCartonPwd", nw.trim()); } catch (e) {}
+      appAlert("密码已修改，下次解锁使用新密码。");
+    };
+  }
+  const lockBtn = $("#cpLockBtn");
+  if (lockBtn && !lockBtn.dataset.bound) {
+    lockBtn.dataset.bound = "1";
+    lockBtn.onclick = () => { cpUnlocked = false; showCpState(); };
+  }
 }
 
 function switchView(view, dbtab){
@@ -3077,6 +3619,7 @@ function switchView(view, dbtab){
   else if (view === "carton") {
     setPageHeader("纸箱算价", "纸箱 =（长+宽+4）×（宽+高）×2 ÷10000 × 平方单价 ｜ 天地板 = 长×宽 ÷10000 × 平方单价 ｜ 基准：国盛指导价");
     initCartonView();
+    loadCtnForm();
     bindCartonEvents();
     syncCartonType();
     calcCarton();
@@ -3106,6 +3649,7 @@ function switchDbTab(tab){
   else if (tab === "style") { renderStylesManageList(); }
   else if (tab === "tpl") loadTemplateList();
   else if (tab === "coef") { renderCoefList(); renderRefTable(); }
+  else if (tab === "cartonprice") { showCpState(); if (cpUnlocked) renderCpTable(); bindCpEvents(); }
   else if (tab === "backup") { renderDbStats(); renderBackupList(); }
 }
 
